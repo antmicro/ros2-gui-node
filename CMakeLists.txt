@@ -6,9 +6,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(std_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -21,6 +22,33 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+include_directories(include)
+
+set(node_plugins "")
+
+#######################
+# GUI Node
+#######################
+add_library(gui_node SHARED
+  src/gui_node.cpp
+)
+ament_target_dependencies(gui_node
+  "rclcpp"
+  "rclcpp_components"
+  "std_msgs"
+)
+rclcpp_components_register_nodes(gui_node "gui_node::GuiNode")
+set(node_plugins "${gui_node}gui_node::GuiNode;$<TARGET_FILE:gui_node>\n")
+
+#######################
+# Install
+#######################
+install(TARGETS
+    gui_node
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
 
 add_custom_target(format
     COMMAND bash -c "find ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include -iname \"*.cpp\" -o -iname \"*.hpp\" | xargs clang-tidy -format-style=file -p ${CMAKE_BINARY_DIR} -fix"
