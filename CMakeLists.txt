@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD 20)
 project(gui_node VERSION 0.0.1)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 find_package(ament_cmake REQUIRED)
@@ -12,15 +12,15 @@ find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 
 if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
+    find_package(ament_lint_auto REQUIRED)
+    # the following line skips the linter which checks for copyrights
+    # comment the line when a copyright and license is added to all source files
+    set(ament_cmake_copyright_FOUND TRUE)
+    # the following line skips cpplint (only works in a git repo)
+    # comment the line when this package is in a git repo and when
+    # a copyright and license is added to all source files
+    set(ament_cmake_cpplint_FOUND TRUE)
+    ament_lint_auto_find_test_dependencies()
 endif()
 
 include_directories(include)
@@ -31,24 +31,42 @@ set(node_plugins "")
 # GUI Node
 #######################
 add_library(gui_node SHARED
-  src/gui_node.cpp
+    src/gui_node.cpp
 )
 ament_target_dependencies(gui_node
-  "rclcpp"
-  "rclcpp_components"
-  "std_msgs"
+    rclcpp
+    rclcpp_components
+    std_msgs
 )
 rclcpp_components_register_nodes(gui_node "gui_node::GuiNode")
 set(node_plugins "${gui_node}gui_node::GuiNode;$<TARGET_FILE:gui_node>\n")
+
+#######################
+# Publish node
+#######################
+add_library(gui_node_sample_publisher SHARED
+    src/samples/publisher_node.cpp
+    src/gui_node.cpp
+)
+
+ament_target_dependencies(gui_node_sample_publisher
+    rclcpp
+    rclcpp_components
+    std_msgs
+)
+rclcpp_components_register_nodes(gui_node_sample_publisher "gui_node::TimePublisher")
+set(node_plugins "${gui_node_sample_publisher}gui_node::TimePublisher;$<TARGET_FILE:publisher_node>\n")
 
 #######################
 # Install
 #######################
 install(TARGETS
     gui_node
+    gui_node_sample_publisher
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin)
+    RUNTIME DESTINATION bin
+)
 
 add_custom_target(format
     COMMAND bash -c "find ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include -iname \"*.cpp\" -o -iname \"*.hpp\" | xargs clang-tidy -format-style=file -p ${CMAKE_BINARY_DIR} -fix"
