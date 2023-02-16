@@ -49,3 +49,9 @@ html/
 # ROS2 directories
 install/
 log/
+
+# ImGUI config file
+imgui.ini
+
+# Python cache
+__pycache__/
