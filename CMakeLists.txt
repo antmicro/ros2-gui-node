@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(glfw3 REQUIRED)
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -23,9 +24,14 @@ if(BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif()
 
-include_directories(include)
+include_directories(include
+    third-party/imgui
+    third-party/imgui/backends
+)
 
 set(node_plugins "")
+
+add_compile_definitions(GLFW_INCLUDE_VULKAN)
 
 #######################
 # GUI Node
