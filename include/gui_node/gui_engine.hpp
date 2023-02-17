@@ -61,6 +61,71 @@ class GuiEngine
     std::pair<uint32_t, vk::Queue> queue_family;         ///< Queue family index and queue
     std::vector<const char *> device_extensions;         ///< Device extensions required for the application
     const int MAX_FRAMES_IN_FLIGHT = 2;                  ///< Maximum number of frames in flight
+    VkDebugUtilsMessengerEXT debug_messenger;            ///< Debug messenger
+
+#ifdef NDEBUG
+    const bool enable_validation_layers = false; ///< Disable validation layers
+#else
+    const bool enable_validation_layers = true; ///< Enable validation layers
+#endif
+
+    const std::vector<const char *> validation_layers = {"VK_LAYER_KHRONOS_validation"}; ///< Validation layers to use
+
+    /**
+     * Checks if the required validation layers are available and supported by the GPU.
+     *
+     * @return True if the required validation layers are available and supported by the GPU, false otherwise.
+     */
+    bool checkValidationLayerSupport();
+
+    /**
+     * Processes debug messages from the validation layers.
+     *
+     * @param message_severity Severity of the message.
+     * @param message_type Type of the message.
+     * @param p_callback_data Pointer to the callback data.
+     * @param p_user_data Pointer to user data.
+     * @return VK_FALSE
+     */
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugcallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                                                        VkDebugUtilsMessageTypeFlagsEXT message_type,
+                                                        const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
+                                                        void *p_user_data);
+
+    /**
+     * Creates a debug messenger.
+     *
+     * @param instance Vulkan instance.
+     * @param p_create_info Pointer to the create info.
+     * @param p_allocator Pointer to the allocator.
+     * @param p_debug_messenger Pointer to the debug messenger.
+     * @return VK_SUCCESS if the debug messenger was created successfully, an error code otherwise.
+     */
+    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
+                                          const VkAllocationCallbacks *p_allocator,
+                                          VkDebugUtilsMessengerEXT *p_debug_messenger);
+
+    /**
+     * Destroys a debug messenger.
+     *
+     * @param instance Vulkan instance.
+     * @param debug_messenger Debug messenger to destroy.
+     * @param p_allocator Pointer to the allocator.
+     */
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debug_messenger,
+                                       const VkAllocationCallbacks *p_allocator);
+
+    /**
+     * Creates create info for the debug messenger.
+     *
+     * @param create_info Reference to the create info to be filled.
+     */
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create_info);
+
+    /**
+     * Sets up the debug messenger.
+     */
+    void setupDebugMessenger();
 
     /**
      * Find the queue families of the physical device.
