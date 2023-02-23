@@ -1,5 +1,7 @@
-#ifndef ROS_PUBLISHER_DATA_HPP
-#define ROS_PUBLISHER_DATA_HPP
+#ifndef GUI_NODE_ROS_DATA_ROS_PUBLISHER_DATA_HPP
+#define GUI_NODE_ROS_DATA_ROS_PUBLISHER_DATA_HPP
+
+#pragma once
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -49,4 +51,4 @@ public:
 };
 
 } // namespace gui_node
-#endif // ROS_PUBLISHER_DATA_HPP
+#endif // GUI_NODE_ROS_DATA_ROS_PUBLISHER_DATA_HPP

@@ -1,5 +1,7 @@
-#ifndef ROS_CLIENT_DATA_HPP_
-#define ROS_CLIENT_DATA_HPP_
+#ifndef GUI_NODE_ROS_DATA_ROS_CLIENT_DATA_HPP
+#define GUI_NODE_ROS_DATA_ROS_CLIENT_DATA_HPP
+
+#pragma once
 
 #include <chrono>
 #include <rclcpp/rclcpp.hpp>
@@ -18,10 +20,6 @@ namespace gui_node
 template <class Tmsg, class Tdata> class RosServiceClientData : public RosData
 {
 private:
-    typename rclcpp::Client<Tmsg>::SharedPtr client; ///< Client of the service
-    std::function<typename std::shared_ptr<Tdata>(typename std::shared_ptr<typename Tmsg::Response>)>
-        callback_function; ///< Proccesses the response from the service
-
     /**
      * Callback function for the service response.
      *
@@ -36,6 +34,10 @@ private:
             auto data = callback_function(result);
         }
     }
+
+    typename rclcpp::Client<Tmsg>::SharedPtr client; ///< Client of the service
+    std::function<typename std::shared_ptr<Tdata>(typename std::shared_ptr<typename Tmsg::Response>)>
+        callback_function; ///< Proccesses the response from the service
 
 public:
     /**
@@ -76,4 +78,4 @@ public:
 };
 
 };     // namespace gui_node
-#endif // ROS_CLIENT_DATA_HPP_
+#endif // GUI_NODE_ROS_DATA_ROS_CLIENT_DATA_HPP

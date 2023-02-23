@@ -1,5 +1,5 @@
-#ifndef COMPOSITION__GUI_NODE_COMPONENT_HPP_
-#define COMPOSITION__GUI_NODE_COMPONENT_HPP_
+#ifndef GUI_NODE_GUI_NODE_HPP
+#define GUI_NODE_GUI_NODE_HPP
 
 #pragma once
 
@@ -70,6 +70,8 @@ public:
  */
 class GuiNode : public rclcpp::Node
 {
+private:
+    std::unordered_map<std::string, std::shared_ptr<RosData>> ros_data_map; ///< Map of RosData nodes
 public:
     /**
      * Constructor
@@ -96,10 +98,7 @@ public:
      * @throws RosDataException if the node with the name already exists
      */
     void addRosData(const std::string &node_name, std::shared_ptr<RosData> ros_data);
-
-private:
-    std::unordered_map<std::string, std::shared_ptr<RosData>> ros_data_map; ///< Map of RosData nodes
 };
 } // namespace gui_node
 
-#endif // COMPOSITION__GUI_NODE_COMPONENT_HPP_
+#endif // GUI_NODE_GUI_NODE_HPP

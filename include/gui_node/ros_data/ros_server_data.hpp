@@ -1,5 +1,7 @@
-#ifndef ROS_SERVER_DATA_HPP_
-#define ROS_SERVER_DATA_HPP_
+#ifndef GUI_NODE_ROS_DATA_ROS_SERVER_DATA_HPP
+#define GUI_NODE_ROS_DATA_ROS_SERVER_DATA_HPP
+
+#pragma once
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -16,10 +18,6 @@ namespace gui_node
 template <class Tmsg> class RosServiceServerData : public RosData
 {
 private:
-    typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server.
-    std::function<void(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)>
-        service_function; ///< The service function to process requests.
-
     /**
      * Callback function for the ROS2 service server.
      * Processes the request and sends the response to the client.
@@ -32,6 +30,9 @@ private:
         service_function(request, response);
     }
 
+    typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server.
+    std::function<void(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)>
+        service_function; ///< The service function to process requests.
 public:
     /**
      * Constructor.
@@ -53,4 +54,4 @@ public:
 };
 
 };     // namespace gui_node
-#endif // ROS_SERVER_DATA_HPP_
+#endif // GUI_NODE_ROS_DATA_ROS_SERVER_DATA_HPP

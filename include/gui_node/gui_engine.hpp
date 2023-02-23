@@ -1,5 +1,8 @@
-#ifndef GUI_VULKAN_IMGUI_ENGINE_HPP_
-#define GUI_VULKAN_IMGUI_ENGINE_HPP_
+#ifndef GUI_NODE_GUI_ENGINE_HPP
+#define GUI_NODE_GUI_ENGINE_HPP
+
+#pragma once
+
 #include <GLFW/glfw3.h>
 #include <imgui_impl_vulkan.h>
 #include <memory>
@@ -367,4 +370,4 @@ public:
 };
 
 } // namespace gui_node
-#endif
+#endif // GUI_NODE_GUI_ENGINE_HPP

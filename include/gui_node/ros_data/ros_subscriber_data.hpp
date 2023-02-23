@@ -1,5 +1,7 @@
-#ifndef ROS_SUBSCRIBER_DATA_HPP
-#define ROS_SUBSCRIBER_DATA_HPP
+#ifndef GUI_NODE_ROS_DATA_ROS_SUBSCRIBER_DATA_HPP
+#define GUI_NODE_ROS_DATA_ROS_SUBSCRIBER_DATA_HPP
+
+#pragma once
 
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -19,9 +21,6 @@ namespace gui_node
 template <class Tmsg, class Tdata> class RosSubscriberData : public RosData
 {
 private:
-    typename rclcpp::Subscription<Tmsg>::SharedPtr subscriber;          ///< Subscriber
-    std::function<Tdata(const typename Tmsg::SharedPtr)> data_function; ///< Function to convert message to data
-
     /**
      * Callback function for subscriber
      *
@@ -29,6 +28,8 @@ private:
      */
     void callback(const typename Tmsg::SharedPtr &msg) { Tdata data = data_function(msg); }
 
+    typename rclcpp::Subscription<Tmsg>::SharedPtr subscriber;          ///< Subscriber
+    std::function<Tdata(const typename Tmsg::SharedPtr)> data_function; ///< Function to convert message to data
 public:
     /**
      * Constructor
@@ -48,4 +49,4 @@ public:
 };
 
 } // namespace gui_node
-#endif // ROS_SUBSCRIBER_DATA_HPP
+#endif // GUI_NODE_ROS_DATA_ROS_SUBSCRIBER_DATA_HPP
