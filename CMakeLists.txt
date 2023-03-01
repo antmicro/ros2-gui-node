@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(Vulkan REQUIRED)
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -27,6 +28,7 @@ endif()
 include_directories(include
     third-party/imgui
     third-party/imgui/backends
+    Vulkan::Headers
 )
 
 set(node_plugins "")

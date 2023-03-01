@@ -6,6 +6,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -16,11 +17,12 @@
 namespace gui_node
 {
 
+void WindowDeleter::operator()(GLFWwindow *window) const { glfwDestroyWindow(window); }
+
 bool GuiEngine::checkValidationLayerSupport()
 {
     uint32_t layer_count;
     vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-
     std::vector<VkLayerProperties> available_layers(layer_count);
     vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
 
@@ -54,22 +56,24 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
         if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT &&
             messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         {
-            std::cerr << "WARNING: validation layer: " << pCallbackData->pMessage << std::endl;
+            RCLCPP_WARN(rclcpp::get_logger("GuiEngine"), "Validation layer: %s", pCallbackData->pMessage);
         }
         else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         {
-            std::cerr << "ERROR: validation layer: " << pCallbackData->pMessage << std::endl;
+            RCLCPP_ERROR(rclcpp::get_logger("GuiEngine"), "Validation layer: %s", pCallbackData->pMessage);
         }
     }
     return VK_FALSE;
 }
 
-VkResult GuiEngine::CreateDebugUtilsMessengerEXT(VkInstance instance,
+VkResult GuiEngine::CreateDebugUtilsMessengerEXT(const VkInstance &instance,
                                                  const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
                                                  const VkAllocationCallbacks *pAllocator,
                                                  VkDebugUtilsMessengerEXT *pDebugMessenger)
 {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    PFN_vkCreateDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+
     if (func != nullptr)
     {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -80,10 +84,11 @@ VkResult GuiEngine::CreateDebugUtilsMessengerEXT(VkInstance instance,
     }
 }
 
-void GuiEngine::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+void GuiEngine::DestroyDebugUtilsMessengerEXT(const VkInstance &instance, VkDebugUtilsMessengerEXT debugMessenger,
                                               const VkAllocationCallbacks *pAllocator)
 {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    PFN_vkDestroyDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
     if (func != nullptr)
     {
         func(instance, debugMessenger, pAllocator);
@@ -94,9 +99,12 @@ void GuiEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfo
 {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+
+    // The debug callback will be called with the most verbose output for all messages with severity >= WARNING
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    // The debug callback will be called for all message types
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
@@ -107,7 +115,8 @@ void GuiEngine::createInstance()
 {
     if (enable_validation_layers && !checkValidationLayerSupport())
     {
-        throw std::runtime_error("validation layers requested, but not available!");
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Validation layers requested, but not available!");
+        throw std::runtime_error("Validation layers requested, but not available!");
     }
     uint32_t glfw_extension_count = 0;
     const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
@@ -130,7 +139,7 @@ void GuiEngine::createInstance()
         create_info.ppEnabledLayerNames = validation_layers.data();
 
         populateDebugMessengerCreateInfo(debug_create_info);
-        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debug_create_info;
+        create_info.pNext = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT *>(&debug_create_info);
     }
     else
     {
@@ -140,6 +149,7 @@ void GuiEngine::createInstance()
 
     if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create instance");
         throw std::runtime_error("Failed to create instance");
     }
 }
@@ -155,14 +165,16 @@ void GuiEngine::setupDebugMessenger()
 
     if (CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debug_messenger) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to set up debug messenger");
         throw std::runtime_error("Failed to set up debug messenger");
     }
 }
 
 void GuiEngine::createSurface()
 {
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(instance, getWindow(), nullptr, &surface) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create window surface");
         throw std::runtime_error("Failed to create window surface");
     }
 }
@@ -173,25 +185,23 @@ void GuiEngine::createPhysicalDevice()
     vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
     if (device_count == 0)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to find GPUs with Vulkan support");
         throw std::runtime_error("Failed to find GPUs with Vulkan support");
     }
 
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
 
-    for (const auto &device : devices)
-    {
-        if (isDeviceSuitable(device))
-        {
-            physical_device = device;
-            break;
-        }
-    }
+    std::vector<VkPhysicalDevice>::iterator it = std::find_if(
+        devices.begin(), devices.end(), [this](const VkPhysicalDevice &device) { return isDeviceSuitable(device); });
 
-    if (physical_device == VK_NULL_HANDLE)
+    if (it == devices.end())
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to find a suitable GPU");
         throw std::runtime_error("Failed to find a suitable GPU");
     }
+
+    physical_device = *it;
 }
 
 void GuiEngine::createLogicalDevice()
@@ -229,6 +239,7 @@ void GuiEngine::createLogicalDevice()
 
     if (vkCreateDevice(physical_device, &create_info, nullptr, &device) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create logical device");
         throw std::runtime_error("Failed to create logical device");
     }
 
@@ -286,6 +297,7 @@ void GuiEngine::createSwapChain()
 
     if (vkCreateSwapchainKHR(device, &create_info, nullptr, &swap_chain) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create swap chain");
         throw std::runtime_error("Failed to create swap chain");
     }
 
@@ -320,6 +332,7 @@ void GuiEngine::createImageViews()
 
         if (vkCreateImageView(device, &create_info, nullptr, &swap_chain_image_views[i]) != VK_SUCCESS)
         {
+            RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create image views");
             throw std::runtime_error("Failed to create image views");
         }
     }
@@ -365,6 +378,7 @@ void GuiEngine::createRenderPass()
 
     if (vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create render pass");
         throw std::runtime_error("Failed to create render pass");
     }
 }
@@ -373,21 +387,20 @@ void GuiEngine::createFramebuffers()
 {
     swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
+    VkFramebufferCreateInfo framebuffer_info = {};
+    framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebuffer_info.renderPass = render_pass;
+    framebuffer_info.attachmentCount = 1;
+    framebuffer_info.width = swap_chain_extent.width;
+    framebuffer_info.height = swap_chain_extent.height;
+    framebuffer_info.layers = 1;
+
     for (size_t i = 0; i < swap_chain_image_views.size(); i++)
     {
-        VkImageView attachments[] = {swap_chain_image_views[i]};
-
-        VkFramebufferCreateInfo framebuffer_info = {};
-        framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebuffer_info.renderPass = render_pass;
-        framebuffer_info.attachmentCount = 1;
-        framebuffer_info.pAttachments = attachments;
-        framebuffer_info.width = swap_chain_extent.width;
-        framebuffer_info.height = swap_chain_extent.height;
-        framebuffer_info.layers = 1;
-
+        framebuffer_info.pAttachments = &swap_chain_image_views[i];
         if (vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swap_chain_framebuffers[i]) != VK_SUCCESS)
         {
+            RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create framebuffer");
             throw std::runtime_error("Failed to create framebuffer");
         }
     }
@@ -403,6 +416,7 @@ void GuiEngine::createCommandPool()
 
     if (vkCreateCommandPool(device, &pool_info, nullptr, &command_pool) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create command pool");
         throw std::runtime_error("Failed to create command pool");
     }
 }
@@ -415,12 +429,14 @@ void GuiEngine::createDescriptorPool()
 
     VkDescriptorPoolCreateInfo pool_info = {};
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     pool_info.poolSizeCount = 1;
     pool_info.pPoolSizes = &pool_size;
     pool_info.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
     if (vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptor_pool) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create descriptor pool");
         throw std::runtime_error("Failed to create descriptor pool");
     }
 }
@@ -437,6 +453,7 @@ void GuiEngine::createCommandBuffers()
 
     if (vkAllocateCommandBuffers(device, &alloc_info, command_buffers.data()) != VK_SUCCESS)
     {
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to allocate command buffers");
         throw std::runtime_error("Failed to allocate command buffers");
     }
 }
@@ -460,6 +477,7 @@ void GuiEngine::createSyncObjects()
             vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) != VK_SUCCESS ||
             vkCreateFence(device, &fence_info, nullptr, &in_flight_fences[i]) != VK_SUCCESS)
         {
+            RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create synchronization objects for a frame");
             throw std::runtime_error("Failed to create synchronization objects for a frame");
         }
     }
@@ -467,29 +485,35 @@ void GuiEngine::createSyncObjects()
 
 VkSurfaceFormatKHR GuiEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &available_formats)
 {
-    for (const auto &available_format : available_formats)
-    {
-        if (available_format.format == VK_FORMAT_R8G8B8A8_SRGB &&
-            available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-        {
-            return available_format;
-        }
-    }
+    auto it = std::find_if(available_formats.begin(), available_formats.end(),
+                           [](const VkSurfaceFormatKHR &format) {
+                               return format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+                                      format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+                           });
 
-    return available_formats[0];
+    if (it != available_formats.end())
+    {
+        return *it;
+    }
+    else
+    {
+        return available_formats[0];
+    }
 }
 
 VkPresentModeKHR GuiEngine::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &available_present_modes)
 {
-    for (const auto &available_present_mode : available_present_modes)
-    {
-        if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
-        {
-            return available_present_mode;
-        }
-    }
+    auto it = std::find_if(available_present_modes.begin(), available_present_modes.end(),
+                           [](const VkPresentModeKHR &mode) { return mode == VK_PRESENT_MODE_MAILBOX_KHR; });
 
-    return VK_PRESENT_MODE_FIFO_KHR;
+    if (it != available_present_modes.end())
+    {
+        return *it;
+    }
+    else
+    {
+        return VK_PRESENT_MODE_FIFO_KHR;
+    }
 }
 
 VkExtent2D GuiEngine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
@@ -501,7 +525,7 @@ VkExtent2D GuiEngine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilit
     else
     {
         int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(getWindow(), &width, &height);
 
         VkExtent2D actual_extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
@@ -514,7 +538,7 @@ VkExtent2D GuiEngine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilit
     }
 }
 
-QueueFamilyIndices GuiEngine::findQueueFamilies(VkPhysicalDevice device)
+QueueFamilyIndices GuiEngine::findQueueFamilies(const VkPhysicalDevice &device)
 {
     QueueFamilyIndices indices;
 
@@ -551,7 +575,7 @@ QueueFamilyIndices GuiEngine::findQueueFamilies(VkPhysicalDevice device)
     return indices;
 }
 
-bool GuiEngine::checkDeviceExtensionSupport(VkPhysicalDevice device)
+bool GuiEngine::checkDeviceExtensionSupport(const VkPhysicalDevice &device)
 {
     uint32_t extension_count;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
@@ -569,7 +593,7 @@ bool GuiEngine::checkDeviceExtensionSupport(VkPhysicalDevice device)
     return required_extensions.empty();
 }
 
-SwapChainSupportDetails GuiEngine::querySwapChainSupport(VkPhysicalDevice device)
+SwapChainSupportDetails GuiEngine::querySwapChainSupport(const VkPhysicalDevice &device)
 {
     SwapChainSupportDetails details;
 
@@ -596,7 +620,7 @@ SwapChainSupportDetails GuiEngine::querySwapChainSupport(VkPhysicalDevice device
     return details;
 }
 
-bool GuiEngine::isDeviceSuitable(VkPhysicalDevice device)
+bool GuiEngine::isDeviceSuitable(const VkPhysicalDevice &device)
 {
     QueueFamilyIndices indices = findQueueFamilies(device);
     bool extensions_supported = checkDeviceExtensionSupport(device);
@@ -611,57 +635,13 @@ bool GuiEngine::isDeviceSuitable(VkPhysicalDevice device)
     return indices.isComplete() && extensions_supported && swap_chain_adequate;
 }
 
-void GuiEngine::initImGuiVulkanImpl()
-{
-    QueueFamilyIndices indices = findQueueFamilies(physical_device);
-    ImGui_ImplGlfw_InitForVulkan(window, true);
-    ImGui_ImplVulkan_InitInfo init_info{};
-    init_info.Instance = instance;
-    init_info.PhysicalDevice = physical_device;
-    init_info.Device = device;
-    init_info.QueueFamily = indices.graphics_family.value();
-    init_info.Queue = graphics_queue;
-    init_info.PipelineCache = VK_NULL_HANDLE;
-    init_info.DescriptorPool = descriptor_pool;
-    init_info.Subpass = 0;
-    init_info.MinImageCount = swap_chain_images.size();
-    init_info.ImageCount = swap_chain_images.size();
-    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    init_info.Allocator = nullptr;
-    init_info.CheckVkResultFn = nullptr;
-    ImGui_ImplVulkan_Init(&init_info, render_pass);
-}
-
-void GuiEngine::buildImGuiFonts()
-{
-    {
-        vkResetCommandPool(device, command_pool, 0);
-        VkCommandBufferBeginInfo begin_info{};
-        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(command_buffers[0], &begin_info);
-        ImGui_ImplVulkan_CreateFontsTexture(command_buffers[0]);
-        vkEndCommandBuffer(command_buffers[0]);
-
-        VkSubmitInfo submit_info{};
-        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submit_info.commandBufferCount = 1;
-        submit_info.pCommandBuffers = &command_buffers[0];
-
-        vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-        vkQueueWaitIdle(graphics_queue);
-        ImGui_ImplVulkan_DestroyFontUploadObjects();
-    }
-}
-
 void GuiEngine::rebuildSwapChain()
 {
     int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
+    glfwGetFramebufferSize(getWindow(), &width, &height);
     while (width == 0 || height == 0)
     {
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(getWindow(), &width, &height);
         glfwWaitEvents();
     }
 
@@ -673,14 +653,15 @@ void GuiEngine::rebuildSwapChain()
     createFramebuffers();
 }
 
-void GuiEngine::recordRenderPass(VkCommandBuffer command_buffer, uint32_t image_index)
+void GuiEngine::recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t image_index)
 {
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
     if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to begin recording command buffer!");
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to begin recording command buffer!");
+        throw std::runtime_error("Failed to begin recording command buffer!");
     }
 
     VkRenderPassBeginInfo render_pass_info{};
@@ -689,8 +670,6 @@ void GuiEngine::recordRenderPass(VkCommandBuffer command_buffer, uint32_t image_
     render_pass_info.framebuffer = swap_chain_framebuffers[image_index];
     render_pass_info.renderArea.offset = {0, 0};
     render_pass_info.renderArea.extent = swap_chain_extent;
-
-    VkClearValue clear_color = {{{0.45f, 0.55f, 0.60f, 1.0f}}};
     render_pass_info.clearValueCount = 1;
     render_pass_info.pClearValues = &clear_color;
 
@@ -700,7 +679,8 @@ void GuiEngine::recordRenderPass(VkCommandBuffer command_buffer, uint32_t image_
     vkCmdEndRenderPass(command_buffer);
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to record command buffer!");
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to record command buffer!");
+        throw std::runtime_error("Failed to record command buffer!");
     }
 }
 
@@ -721,7 +701,8 @@ void GuiEngine::draw()
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        throw std::runtime_error("failed to acquire swap chain image!");
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to acquire swap chain image!");
+        throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
     vkResetFences(device, 1, &in_flight_fences[current_frame]);
@@ -747,7 +728,8 @@ void GuiEngine::draw()
 
     if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to submit draw command buffer!");
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to submit draw command buffer!");
+        throw std::runtime_error("Failed to submit draw command buffer!");
     }
 
     VkPresentInfoKHR present_info{};
@@ -771,7 +753,8 @@ void GuiEngine::draw()
     }
     else if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to present swap chain image!");
+        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to present swap chain image!");
+        throw std::runtime_error("Failed to present swap chain image!");
     }
 
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -788,9 +771,10 @@ void GuiEngine::initGlfw()
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr);
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    window = std::unique_ptr<GLFWwindow, WindowDeleter>(
+        glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr));
+    glfwSetWindowUserPointer(getWindow(), this);
+    glfwSetFramebufferSizeCallback(getWindow(), framebufferResizeCallback);
 }
 
 void GuiEngine::initVulkan()
@@ -810,19 +794,11 @@ void GuiEngine::initVulkan()
     createSyncObjects();
 }
 
-void GuiEngine::initImGui()
-{
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-    initImGuiVulkanImpl();
-    buildImGuiFonts();
-}
-
 void GuiEngine::init()
 {
     initGlfw();
     initVulkan();
-    initImGui();
+    imgui_engine->init(shared_from_this());
     return;
 }
 
@@ -842,9 +818,8 @@ void GuiEngine::cleanupSwapChain()
 void GuiEngine::cleanup()
 {
     vkDeviceWaitIdle(device);
-    ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    textures.clear();
+    imgui_engine.reset();
     cleanupSwapChain();
     vkDestroyRenderPass(device, render_pass, nullptr);
     vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
@@ -862,14 +837,367 @@ void GuiEngine::cleanup()
         DestroyDebugUtilsMessengerEXT(instance, debug_messenger, nullptr);
     }
     vkDestroyInstance(instance, nullptr);
-    glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-GLFWwindow *GuiEngine::getWindow() { return window; }
+GuiEngine::GuiEngine(const std::string &application_name)
+    : device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME}), application_name(application_name),
+      imgui_engine(std::make_unique<ImGuiEngine>())
+{
+}
 
-GuiEngine::GuiEngine() { device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME}; }
+GuiEngine::GuiEngine(const std::string &application_name, const std::vector<const char *> &device_extensions)
+    : device_extensions(device_extensions), application_name(application_name),
+      imgui_engine(std::make_unique<ImGuiEngine>())
+{
+}
 
-GuiEngine::GuiEngine(std::vector<const char *> device_extensions) { this->device_extensions = device_extensions; }
+bool GuiEngine::addTexture(const std::string &name, unsigned char *image_data, int width, int height, int channels)
+{
+    if (textures.find(name) != textures.end())
+    {
+        RCLCPP_WARN(rclcpp::get_logger("GuiEngine"), "Texture %s already exists!", name.c_str());
+        return false;
+    }
+    textures.emplace(name, std::make_shared<TextureLoader>(image_data, width, height, channels, device, physical_device,
+                                                           command_pool, graphics_queue));
+    return true;
+}
+
+std::shared_ptr<TextureLoader> GuiEngine::getTexture(const std::string &name)
+{
+    if (textures.find(name) == textures.end())
+    {
+        RCLCPP_ERROR(rclcpp::get_logger("GuiEngine"), "Texture with name %s does not exist!", name.c_str());
+        throw std::runtime_error("Texture with name " + name + " does not exist!");
+    }
+    return textures.at(name);
+}
+
+void ImGuiEngine::init(std::shared_ptr<GuiEngine> gui_engine)
+{
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    initVulkanImpl(gui_engine);
+    initFonts(gui_engine);
+}
+
+void ImGuiEngine::initVulkanImpl(std::shared_ptr<GuiEngine> gui_engine)
+{
+    QueueFamilyIndices indices = gui_engine->findQueueFamilies(gui_engine->getPhysicalDevice());
+    ImGui_ImplGlfw_InitForVulkan(gui_engine->getWindow(), true);
+    ImGui_ImplVulkan_InitInfo init_info{};
+    init_info.Instance = gui_engine->getInstance();
+    init_info.PhysicalDevice = gui_engine->getPhysicalDevice();
+    init_info.Device = gui_engine->getDevice();
+    init_info.QueueFamily = indices.graphics_family.value();
+    init_info.Queue = gui_engine->getGraphicsQueue();
+    init_info.PipelineCache = VK_NULL_HANDLE;
+    init_info.DescriptorPool = gui_engine->getDescriptorPool();
+    init_info.Subpass = 0;
+    init_info.MinImageCount = gui_engine->getSwapChainImages().size();
+    init_info.ImageCount = gui_engine->getSwapChainImages().size();
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.Allocator = nullptr;
+    init_info.CheckVkResultFn = nullptr;
+    ImGui_ImplVulkan_Init(&init_info, gui_engine->getRenderPass());
+}
+
+void ImGuiEngine::initFonts(std::shared_ptr<GuiEngine> gui_engine)
+{
+    VkCommandBufferBeginInfo begin_info{};
+    VkCommandBuffer command_buffer = gui_engine->getCommandBuffer(0);
+    vkResetCommandPool(gui_engine->getDevice(), gui_engine->getCommandPool(), 0);
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(command_buffer, &begin_info);
+    ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+    vkEndCommandBuffer(command_buffer);
+
+    VkSubmitInfo submit_info{};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer;
+
+    vkQueueSubmit(gui_engine->getGraphicsQueue(), 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(gui_engine->getGraphicsQueue());
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
+}
+
+ImGuiEngine::~ImGuiEngine()
+{
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
+TextureLoader::TextureLoader(unsigned char *image_data, int width, int height, int channels, const VkDevice &device,
+                             const VkPhysicalDevice &physical_device, const VkCommandPool &command_pool,
+                             const VkQueue &graphics_queue)
+    : device(device)
+{
+    size_t image_size = width * height * channels;
+    this->width = width;
+    this->height = height;
+    this->channels = channels;
+
+    createImage(physical_device);
+    createImageView();
+    createSampler();
+
+    descriptor_set = ImGui_ImplVulkan_AddTexture(sampler, image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    createUploadBuffer(image_size, physical_device);
+    uploadToBuffer(image_size, image_data);
+
+    recordCommandBuffer(command_pool, graphics_queue);
+}
+
+uint32_t TextureLoader::findMemoryType(uint32_t type_filter, const VkPhysicalDevice &physical_device,
+                                       VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties mem_properties;
+    vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
+
+    for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
+    {
+        if ((type_filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
+        }
+    }
+
+    RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to find suitable memory type!");
+    throw std::runtime_error("Failed to find suitable memory type!");
+}
+
+void TextureLoader::createImage(const VkPhysicalDevice &physical_device)
+{
+    VkImageCreateInfo image_info{};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.format = VK_FORMAT_R8G8B8A8_UNORM;
+    image_info.extent.width = width;
+    image_info.extent.height = height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    if (vkCreateImage(device, &image_info, nullptr, &image) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create image!");
+        throw std::runtime_error("Failed to create image!");
+    }
+
+    VkMemoryRequirements mem_requirements;
+    vkGetImageMemoryRequirements(device, image, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info{};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex =
+        findMemoryType(mem_requirements.memoryTypeBits, physical_device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (vkAllocateMemory(device, &alloc_info, nullptr, &image_memory) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate image memory!");
+        throw std::runtime_error("Failed to allocate image memory!");
+    }
+
+    vkBindImageMemory(device, image, image_memory, 0);
+}
+
+void TextureLoader::createImageView()
+{
+    VkImageViewCreateInfo view_info{};
+    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    view_info.image = image;
+    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
+    view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view_info.subresourceRange.baseMipLevel = 0;
+    view_info.subresourceRange.levelCount = 1;
+    if (vkCreateImageView(device, &view_info, nullptr, &image_view) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture image view!");
+        throw std::runtime_error("Failed to create texture image view!");
+    }
+}
+
+void TextureLoader::createSampler()
+{
+    VkSamplerCreateInfo sampler_info{};
+    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_info.magFilter = VK_FILTER_LINEAR;
+    sampler_info.minFilter = VK_FILTER_LINEAR;
+    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.minLod = -1000;
+    sampler_info.maxLod = 1000;
+    sampler_info.maxAnisotropy = 1.0f;
+    if (vkCreateSampler(device, &sampler_info, nullptr, &sampler) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture sampler!");
+        throw std::runtime_error("Failed to create texture sampler!");
+    }
+}
+
+void TextureLoader::createUploadBuffer(size_t image_size, const VkPhysicalDevice &physical_device)
+{
+    VkBufferCreateInfo buffer_info{};
+    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size = image_size;
+    buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (vkCreateBuffer(device, &buffer_info, nullptr, &upload_buffer) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create buffer!");
+        throw std::runtime_error("Failed to create buffer!");
+    }
+
+    VkMemoryRequirements mem_requirements;
+    vkGetBufferMemoryRequirements(device, upload_buffer, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info{};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex =
+        findMemoryType(mem_requirements.memoryTypeBits, physical_device, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    if (vkAllocateMemory(device, &alloc_info, nullptr, &upload_buffer_memory) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate buffer memory!");
+        throw std::runtime_error("Failed to allocate buffer memory!");
+    }
+
+    if (vkBindBufferMemory(device, upload_buffer, upload_buffer_memory, 0) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to bind buffer memory!");
+        throw std::runtime_error("Failed to bind buffer memory!");
+    }
+}
+
+void TextureLoader::uploadToBuffer(size_t image_size, unsigned char *image_data)
+{
+    void *map = nullptr;
+    if (vkMapMemory(device, upload_buffer_memory, 0, VK_WHOLE_SIZE, 0, &map) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to map memory!");
+        throw std::runtime_error("Failed to map memory!");
+    }
+
+    memcpy(map, image_data, image_size);
+    VkMappedMemoryRange range[1] = {};
+    range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range[0].memory = upload_buffer_memory;
+    range[0].size = VK_WHOLE_SIZE;
+    if (vkFlushMappedMemoryRanges(device, 1, range) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to flush memory!");
+        throw std::runtime_error("Failed to flush memory!");
+    }
+    vkUnmapMemory(device, upload_buffer_memory);
+}
+
+void TextureLoader::recordCommandBuffer(const VkCommandPool &command_pool, const VkQueue &graphics_queue)
+{
+    // Create command buffer
+    VkCommandBuffer command_buffer;
+    VkCommandBufferAllocateInfo alloc_info{};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandPool = command_pool;
+    alloc_info.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(device, &alloc_info, &command_buffer) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate command buffers!");
+        throw std::runtime_error("Failed to allocate command buffers!");
+    }
+
+    VkCommandBufferBeginInfo begin_info{};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to begin recording command buffer!");
+        throw std::runtime_error("Failed to begin recording command buffer!");
+    }
+
+    // Copy buffer to image
+    VkImageMemoryBarrier copy_barrier[1] = {};
+    copy_barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    copy_barrier[0].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    copy_barrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    copy_barrier[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    copy_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    copy_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    copy_barrier[0].image = image;
+    copy_barrier[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy_barrier[0].subresourceRange.levelCount = 1;
+    copy_barrier[0].subresourceRange.layerCount = 1;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                         nullptr, 1, copy_barrier);
+
+    VkBufferImageCopy region = {};
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent.width = width;
+    region.imageExtent.height = height;
+    region.imageExtent.depth = 1;
+    vkCmdCopyBufferToImage(command_buffer, upload_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    VkImageMemoryBarrier use_barrier[1] = {};
+    use_barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    use_barrier[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    use_barrier[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    use_barrier[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    use_barrier[0].newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    use_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    use_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    use_barrier[0].image = image;
+    use_barrier[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    use_barrier[0].subresourceRange.levelCount = 1;
+    use_barrier[0].subresourceRange.layerCount = 1;
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                         nullptr, 0, nullptr, 1, use_barrier);
+
+    // End command buffer
+    VkSubmitInfo submit_info{};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer;
+    if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to record command buffer!");
+        throw std::runtime_error("Failed to record command buffer!");
+    }
+    if (vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to submit draw command buffer!");
+        throw std::runtime_error("Failed to submit draw command buffer!");
+    }
+    if (vkDeviceWaitIdle(device) != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to wait for device to become idle!");
+        throw std::runtime_error("Failed to wait for device to become idle!");
+    }
+}
+
+TextureLoader::~TextureLoader()
+{
+    vkFreeMemory(device, upload_buffer_memory, nullptr);
+    vkDestroyBuffer(device, upload_buffer, nullptr);
+    vkDestroySampler(device, sampler, nullptr);
+    vkDestroyImageView(device, image_view, nullptr);
+    vkDestroyImage(device, image, nullptr);
+    vkFreeMemory(device, image_memory, nullptr);
+    ImGui_ImplVulkan_RemoveTexture(descriptor_set);
+}
 
 } // namespace gui_node
