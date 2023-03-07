@@ -7,8 +7,11 @@
 #include <imgui_impl_vulkan.h>
 #include <memory>
 #include <optional>
+#include <rclcpp/rclcpp.hpp>
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
+
+#include "gui_node/gui_node.hpp"
 
 namespace gui_node
 {
@@ -38,19 +41,6 @@ struct SwapChainSupportDetails
     VkSurfaceCapabilitiesKHR capabilities;       ///< Surface capabilities
     std::vector<VkSurfaceFormatKHR> formats;     ///< Surface formats swap chain can use
     std::vector<VkPresentModeKHR> present_modes; ///< Presentation modes swap chain can use
-};
-
-/**
- * Wrapper for the GLFW window.
- */
-struct WindowDeleter
-{
-    /**
-     * Deletes the GLFW window.
-     *
-     * @param window GLFW window to delete.
-     */
-    void operator()(GLFWwindow *window) const;
 };
 
 const VkClearValue clear_color = {{{0.45f, 0.55f, 0.60f, 1.0f}}}; ///< Clear color for the framebuffer
@@ -224,34 +214,52 @@ public:
 
 class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 {
-    std::unique_ptr<GLFWwindow, WindowDeleter> window;   ///< GLFW Window
-    VkDescriptorPool descriptor_pool;                    ///< Descriptor pool for ImGui
-    VkDevice device;                                     ///< Vulkan logical device
-    VkInstance instance;                                 ///< Vulkan instance
-    VkPhysicalDevice physical_device = VK_NULL_HANDLE;   ///< Physical device (GPU) that Vulkan will be using
-    VkQueue graphics_queue;                              ///< Graphics queue
-    VkQueue present_queue;                               ///< Queue for presenting images to the screen
-    VkSurfaceKHR surface;                                ///< The surface to draw on
-    VkSwapchainKHR swap_chain;                           ///< Swap chain
-    std::vector<VkImage> swap_chain_images;              ///< Swap chain images
-    VkFormat swap_chain_image_format;                    ///< Swap chain image format
-    VkExtent2D swap_chain_extent;                        ///< Swap chain extent
-    std::vector<VkImageView> swap_chain_image_views;     ///< Swap chain image views
-    VkRenderPass render_pass;                            ///< Render pass
-    std::vector<VkFramebuffer> swap_chain_framebuffers;  ///< Framebuffers
-    VkCommandPool command_pool;                          ///< Command pool
-    std::vector<VkCommandBuffer> command_buffers;        ///< Command buffers
-    std::vector<VkSemaphore> image_available_semaphores; ///< Semaphore for when an image is available
-    std::vector<VkSemaphore> render_finished_semaphores; ///< Semaphore for when rendering is finished
-    std::vector<VkFence> in_flight_fences;               ///< Fences for in flight frames
-    uint32_t current_frame = 0;                          ///< Current frame
-    bool framebuffer_resized = false;                    ///< Flag for when the framebuffer is resized
-    std::vector<const char *> device_extensions;         ///< Device extensions required for the application
-    const int MAX_FRAMES_IN_FLIGHT = 2;                  ///< Maximum number of frames in flight
-    VkDebugUtilsMessengerEXT debug_messenger;            ///< Debug messenger
-    const std::string application_name;                  ///< Name of the application
-    std::unordered_map<std::string, std::shared_ptr<TextureLoader>> textures; ///< Textures loaded by the application
-    std::unique_ptr<ImGuiEngine> imgui_engine;                                ///< ImGui engine
+    std::unique_ptr<VkPhysicalDevice> physical_device; ///< Physical device (GPU) that Vulkan will be using
+    VkQueue graphics_queue;                            ///< Graphics queue
+    VkQueue present_queue;                             ///< Queue for presenting images to the screen
+    std::vector<VkImage> swap_chain_images;            ///< Swap chain images
+    VkFormat swap_chain_image_format;                  ///< Swap chain image format
+    VkExtent2D swap_chain_extent;                      ///< Swap chain extent
+    std::vector<VkCommandBuffer> command_buffers;      ///< Command buffers
+    uint32_t current_frame = 0;                        ///< Current frame
+    bool framebuffer_resized = false;                  ///< Flag for when the framebuffer is resized
+    std::vector<const char *> device_extensions;       ///< Device extensions required for the application
+    const int MAX_FRAMES_IN_FLIGHT = 2;                ///< Maximum number of frames in flight
+    const std::string application_name;                ///< Name of the application
+    std::shared_ptr<GuiNode> node;                     ///< The ROS2 node for the GUI
+    std::unique_ptr<ImGuiEngine> imgui_engine;         ///< ImGui engine
+
+    std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow *)>> window;      ///< GLFW Window
+    std::unique_ptr<VkDevice, std::function<void(VkDevice *)>> device;          ///< Vulkan logical device
+    std::unique_ptr<VkInstance, std::function<void(VkInstance *)>> instance;    ///< Vulkan instance
+    std::unordered_map<std::string, std::shared_ptr<TextureLoader>> textures;   ///< Textures loaded by the application
+    std::unique_ptr<VkSurfaceKHR, std::function<void(VkSurfaceKHR *)>> surface; ///< Surface for rendering
+    std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass *)>> render_pass;    ///< Render pass
+    std::unique_ptr<VkCommandPool, std::function<void(VkCommandPool *)>> command_pool; ///< Command pool
+
+    /// Descriptor pool for ImGui
+    std::unique_ptr<VkDescriptorPool, std::function<void(VkDescriptorPool *)>> descriptor_pool;
+
+    /// Swapchain for presenting images to the screen
+    std::unique_ptr<VkSwapchainKHR, std::function<void(VkSwapchainKHR *)>> swap_chain;
+
+    /// Swapchain images views
+    std::vector<std::unique_ptr<VkImageView, std::function<void(VkImageView *)>>> swap_chain_image_views;
+
+    /// Framebuffers for the swap chain images
+    std::vector<std::unique_ptr<VkFramebuffer, std::function<void(VkFramebuffer *)>>> swap_chain_framebuffers;
+
+    /// Semaphore for when an image is available
+    std::vector<std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>> image_available_semaphores;
+
+    /// Semaphore for when rendering is finished
+    std::vector<std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>> render_finished_semaphores;
+
+    /// Fences for in flight frames
+    std::vector<std::unique_ptr<VkFence, std::function<void(VkFence *)>>> in_flight_fences;
+
+    /// Debug messenger
+    std::unique_ptr<VkDebugUtilsMessengerEXT, std::function<void(VkDebugUtilsMessengerEXT *)>> debug_messenger;
 
 #ifdef NDEBUG
     const bool enable_validation_layers = false; ///< Disable validation layers
@@ -281,30 +289,6 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
                                                         VkDebugUtilsMessageTypeFlagsEXT message_type,
                                                         const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                                                         void *p_user_data);
-
-    /**
-     * Creates a debug messenger.
-     *
-     * @param instance Vulkan instance.
-     * @param p_create_info Pointer to the create info.
-     * @param p_allocator Pointer to the allocator.
-     * @param p_debug_messenger Pointer to the debug messenger.
-     * @return VK_SUCCESS if the debug messenger was created successfully, an error code otherwise.
-     */
-    VkResult CreateDebugUtilsMessengerEXT(const VkInstance &instance,
-                                          const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
-                                          const VkAllocationCallbacks *p_allocator,
-                                          VkDebugUtilsMessengerEXT *p_debug_messenger);
-
-    /**
-     * Destroys a debug messenger.
-     *
-     * @param instance Vulkan instance.
-     * @param debug_messenger Debug messenger to destroy.
-     * @param p_allocator Pointer to the allocator.
-     */
-    void DestroyDebugUtilsMessengerEXT(const VkInstance &instance, VkDebugUtilsMessengerEXT debug_messenger,
-                                       const VkAllocationCallbacks *p_allocator);
 
     /**
      * Creates create info for the debug messenger.
@@ -499,15 +483,19 @@ public:
      * Constructor
      *
      * @param application_name The name of the application window.
+     * @param node The ROS2 node for the GUI.
      */
-    GuiEngine(const std::string &application_name);
+    GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node);
 
     /**
      * Constructor.
      *
-     * @param Vector of required extensions for physical device.
+     * @param application_name The name of the application window.
+     * @param node The ROS2 node for the GUI.
+     * @param device_extensions Vector of required extensions for physical device.
      */
-    GuiEngine(const std::string &application_name, const std::vector<const char *> &extensions);
+    GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
+              const std::vector<const char *> &device_extensions);
 
     /**
      * Destroy the GuiEngine object.
@@ -568,14 +556,14 @@ public:
      *
      * @return VkCommandPool The command pool.
      */
-    VkCommandPool getCommandPool() const { return command_pool; }
+    VkCommandPool getCommandPool() const { return *command_pool.get(); }
 
     /**
      * Gets the render pass.
      *
      * @return VkRenderPass The render pass.
      */
-    VkRenderPass getRenderPass() const { return render_pass; }
+    VkRenderPass getRenderPass() const { return *render_pass.get(); }
 
     /**
      * Gets the swap chain images.
@@ -589,14 +577,21 @@ public:
      *
      * @return VkDescriptorPool The descriptor pool.
      */
-    VkDescriptorPool getDescriptorPool() const { return descriptor_pool; }
+    VkDescriptorPool getDescriptorPool() const { return *descriptor_pool.get(); }
 
     /**
      * Gets the instance object.
      *
      * @return VkInstance The instance object.
      */
-    VkInstance getInstance() const { return instance; }
+    VkInstance getInstance() const { return *instance.get(); }
+
+    /**
+     * Gets the surface object.
+     *
+     * @return VkSurfaceKHR The surface object.
+     */
+    VkSurfaceKHR getSurface() const { return *surface.get(); }
 
     /**
      * Gets the graphics queue.
@@ -610,14 +605,29 @@ public:
      *
      * @return VkDevice The logical device.
      */
-    VkDevice getDevice() const { return device; }
+    VkDevice getDevice() const { return *device.get(); }
+
+    /**
+     * Gets the swap chain.
+     *
+     * @return VkSwapchainKHR The swap chain.
+     */
+    VkSwapchainKHR getSwapChain() const { return *swap_chain.get(); }
 
     /**
      * Gets the physical device object.
      *
      * @return VkPhysicalDevice The physical device object.
      */
-    VkPhysicalDevice getPhysicalDevice() const { return physical_device; }
+    VkPhysicalDevice getPhysicalDevice() const { return *physical_device.get(); }
+
+    /**
+     * Gets the frame buffer at the given index.
+     *
+     * @param index The index of the frame buffer.
+     * @return VkFramebuffer The frame buffer.
+     */
+    VkFramebuffer getFrameBuffer(int index) const { return *swap_chain_framebuffers[index].get(); }
 
     /**
      * Find the queue families of the physical device.

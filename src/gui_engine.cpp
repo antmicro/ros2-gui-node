@@ -17,8 +17,6 @@
 namespace gui_node
 {
 
-void WindowDeleter::operator()(GLFWwindow *window) const { glfwDestroyWindow(window); }
-
 bool GuiEngine::checkValidationLayerSupport()
 {
     uint32_t layer_count;
@@ -66,35 +64,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     return VK_FALSE;
 }
 
-VkResult GuiEngine::CreateDebugUtilsMessengerEXT(const VkInstance &instance,
-                                                 const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                                 const VkAllocationCallbacks *pAllocator,
-                                                 VkDebugUtilsMessengerEXT *pDebugMessenger)
-{
-    PFN_vkCreateDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-
-    if (func != nullptr)
-    {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-    else
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void GuiEngine::DestroyDebugUtilsMessengerEXT(const VkInstance &instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                              const VkAllocationCallbacks *pAllocator)
-{
-    PFN_vkDestroyDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-    if (func != nullptr)
-    {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
 void GuiEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
 {
     createInfo = {};
@@ -115,7 +84,7 @@ void GuiEngine::createInstance()
 {
     if (enable_validation_layers && !checkValidationLayerSupport())
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Validation layers requested, but not available!");
+        RCLCPP_FATAL(node->get_logger(), "Validation layers requested, but not available!");
         throw std::runtime_error("Validation layers requested, but not available!");
     }
     uint32_t glfw_extension_count = 0;
@@ -147,9 +116,11 @@ void GuiEngine::createInstance()
         create_info.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS)
+    std::function<void(VkInstance *)> deleter = [](VkInstance *instance) { vkDestroyInstance(*instance, nullptr); };
+    instance = std::unique_ptr<VkInstance, std::function<void(VkInstance *)>>(new VkInstance, deleter);
+    if (vkCreateInstance(&create_info, nullptr, instance.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create instance");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create instance");
         throw std::runtime_error("Failed to create instance");
     }
 }
@@ -161,20 +132,48 @@ void GuiEngine::setupDebugMessenger()
         return;
     }
     VkDebugUtilsMessengerCreateInfoEXT create_info;
+
+    std::function<void(VkDebugUtilsMessengerEXT *)> deleter = [this](VkDebugUtilsMessengerEXT *messenger)
+    {
+        PFN_vkDestroyDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+            vkGetInstanceProcAddr(getInstance(), "vkDestroyDebugUtilsMessengerEXT"));
+        if (func != nullptr)
+        {
+            func(getInstance(), *messenger, nullptr);
+        }
+    };
+
+    debug_messenger = std::unique_ptr<VkDebugUtilsMessengerEXT, std::function<void(VkDebugUtilsMessengerEXT *)>>(
+        new VkDebugUtilsMessengerEXT, deleter);
+
     populateDebugMessengerCreateInfo(create_info);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debug_messenger) != VK_SUCCESS)
+    PFN_vkCreateDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(getInstance(), "vkCreateDebugUtilsMessengerEXT"));
+
+    if (func != nullptr)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to set up debug messenger");
-        throw std::runtime_error("Failed to set up debug messenger");
+        if (func(getInstance(), &create_info, nullptr, debug_messenger.get()) != VK_SUCCESS)
+        {
+            RCLCPP_FATAL(node->get_logger(), "Failed to set up debug messenger");
+            throw std::runtime_error("Failed to set up debug messenger");
+        }
+    }
+    else
+    {
+        RCLCPP_FATAL(node->get_logger(), "Failed to set up debug messenger, extension is not present");
+        throw std::runtime_error("Failed to set up debug messenger, extension is not present");
     }
 }
 
 void GuiEngine::createSurface()
 {
-    if (glfwCreateWindowSurface(instance, getWindow(), nullptr, &surface) != VK_SUCCESS)
+    std::function<void(VkSurfaceKHR *)> deleter = [this](VkSurfaceKHR *surface)
+    { vkDestroySurfaceKHR(getInstance(), *surface, nullptr); };
+    surface = std::unique_ptr<VkSurfaceKHR, std::function<void(VkSurfaceKHR *)>>(new VkSurfaceKHR, deleter);
+    if (glfwCreateWindowSurface(getInstance(), getWindow(), nullptr, surface.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create window surface");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create window surface");
         throw std::runtime_error("Failed to create window surface");
     }
 }
@@ -182,31 +181,31 @@ void GuiEngine::createSurface()
 void GuiEngine::createPhysicalDevice()
 {
     uint32_t device_count = 0;
-    vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+    vkEnumeratePhysicalDevices(getInstance(), &device_count, nullptr);
     if (device_count == 0)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to find GPUs with Vulkan support");
+        RCLCPP_FATAL(node->get_logger(), "Failed to find GPUs with Vulkan support");
         throw std::runtime_error("Failed to find GPUs with Vulkan support");
     }
 
     std::vector<VkPhysicalDevice> devices(device_count);
-    vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+    vkEnumeratePhysicalDevices(getInstance(), &device_count, devices.data());
 
     std::vector<VkPhysicalDevice>::iterator it = std::find_if(
         devices.begin(), devices.end(), [this](const VkPhysicalDevice &device) { return isDeviceSuitable(device); });
 
     if (it == devices.end())
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to find a suitable GPU");
+        RCLCPP_FATAL(node->get_logger(), "Failed to find a suitable GPU");
         throw std::runtime_error("Failed to find a suitable GPU");
     }
 
-    physical_device = *it;
+    physical_device = std::make_unique<VkPhysicalDevice>(*it);
 }
 
 void GuiEngine::createLogicalDevice()
 {
-    QueueFamilyIndices indices = findQueueFamilies(physical_device);
+    QueueFamilyIndices indices = findQueueFamilies(getPhysicalDevice());
 
     std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
     std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(), indices.present_family.value()};
@@ -237,19 +236,21 @@ void GuiEngine::createLogicalDevice()
 
     create_info.enabledLayerCount = 0;
 
-    if (vkCreateDevice(physical_device, &create_info, nullptr, &device) != VK_SUCCESS)
+    std::function<void(VkDevice *)> deleter = [](VkDevice *device) { vkDestroyDevice(*device, nullptr); };
+    device = std::unique_ptr<VkDevice, std::function<void(VkDevice *)>>(new VkDevice, deleter);
+    if (vkCreateDevice(getPhysicalDevice(), &create_info, nullptr, device.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create logical device");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create logical device");
         throw std::runtime_error("Failed to create logical device");
     }
 
-    vkGetDeviceQueue(device, indices.graphics_family.value(), 0, &graphics_queue);
-    vkGetDeviceQueue(device, indices.present_family.value(), 0, &present_queue);
+    vkGetDeviceQueue(getDevice(), indices.graphics_family.value(), 0, &graphics_queue);
+    vkGetDeviceQueue(getDevice(), indices.present_family.value(), 0, &present_queue);
 }
 
 void GuiEngine::createSwapChain()
 {
-    SwapChainSupportDetails swap_chain_support = querySwapChainSupport(physical_device);
+    SwapChainSupportDetails swap_chain_support = querySwapChainSupport(getPhysicalDevice());
 
     VkSurfaceFormatKHR surface_format = chooseSwapSurfaceFormat(swap_chain_support.formats);
     VkPresentModeKHR present_mode = chooseSwapPresentMode(swap_chain_support.present_modes);
@@ -264,7 +265,7 @@ void GuiEngine::createSwapChain()
 
     VkSwapchainCreateInfoKHR create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    create_info.surface = surface;
+    create_info.surface = getSurface();
 
     create_info.minImageCount = image_count;
     create_info.imageFormat = surface_format.format;
@@ -273,7 +274,7 @@ void GuiEngine::createSwapChain()
     create_info.imageArrayLayers = 1;
     create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = findQueueFamilies(physical_device);
+    QueueFamilyIndices indices = findQueueFamilies(getPhysicalDevice());
     uint32_t queue_family_indices[] = {indices.graphics_family.value(), indices.present_family.value()};
 
     if (indices.graphics_family != indices.present_family)
@@ -295,15 +296,18 @@ void GuiEngine::createSwapChain()
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(device, &create_info, nullptr, &swap_chain) != VK_SUCCESS)
+    std::function<void(VkSwapchainKHR *)> deleter = [this](VkSwapchainKHR *swap_chain)
+    { vkDestroySwapchainKHR(getDevice(), *swap_chain, nullptr); };
+    swap_chain = std::unique_ptr<VkSwapchainKHR, std::function<void(VkSwapchainKHR *)>>(new VkSwapchainKHR, deleter);
+    if (vkCreateSwapchainKHR(getDevice(), &create_info, nullptr, swap_chain.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create swap chain");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create swap chain");
         throw std::runtime_error("Failed to create swap chain");
     }
 
-    vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr);
+    vkGetSwapchainImagesKHR(getDevice(), getSwapChain(), &image_count, nullptr);
     swap_chain_images.resize(image_count);
-    vkGetSwapchainImagesKHR(device, swap_chain, &image_count, swap_chain_images.data());
+    vkGetSwapchainImagesKHR(getDevice(), getSwapChain(), &image_count, swap_chain_images.data());
 
     swap_chain_image_format = surface_format.format;
     swap_chain_extent = extent;
@@ -313,26 +317,32 @@ void GuiEngine::createImageViews()
 {
     swap_chain_image_views.resize(swap_chain_images.size());
 
+    VkImageViewCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    create_info.format = swap_chain_image_format;
+    create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    create_info.subresourceRange.baseMipLevel = 0;
+    create_info.subresourceRange.levelCount = 1;
+    create_info.subresourceRange.baseArrayLayer = 0;
+    create_info.subresourceRange.layerCount = 1;
+
+    std::function<void(VkImageView *)> deleter = [this](VkImageView *image_view)
+    { vkDestroyImageView(getDevice(), *image_view, nullptr); };
+
     for (size_t i = 0; i < swap_chain_images.size(); i++)
     {
-        VkImageViewCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         create_info.image = swap_chain_images[i];
-        create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        create_info.format = swap_chain_image_format;
-        create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        create_info.subresourceRange.baseMipLevel = 0;
-        create_info.subresourceRange.levelCount = 1;
-        create_info.subresourceRange.baseArrayLayer = 0;
-        create_info.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(device, &create_info, nullptr, &swap_chain_image_views[i]) != VK_SUCCESS)
+        swap_chain_image_views[i] =
+            std::unique_ptr<VkImageView, std::function<void(VkImageView *)>>(new VkImageView, deleter);
+        if (vkCreateImageView(getDevice(), &create_info, nullptr, swap_chain_image_views[i].get()) != VK_SUCCESS)
         {
-            RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create image views");
+            RCLCPP_FATAL(node->get_logger(), "Failed to create image views");
             throw std::runtime_error("Failed to create image views");
         }
     }
@@ -376,9 +386,12 @@ void GuiEngine::createRenderPass()
     render_pass_info.dependencyCount = 1;
     render_pass_info.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS)
+    std::function<void(VkRenderPass *)> deleter = [this](VkRenderPass *render_pass)
+    { vkDestroyRenderPass(getDevice(), *render_pass, nullptr); };
+    render_pass = std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass *)>>(new VkRenderPass, deleter);
+    if (vkCreateRenderPass(getDevice(), &render_pass_info, nullptr, render_pass.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create render pass");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create render pass");
         throw std::runtime_error("Failed to create render pass");
     }
 }
@@ -389,18 +402,24 @@ void GuiEngine::createFramebuffers()
 
     VkFramebufferCreateInfo framebuffer_info = {};
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebuffer_info.renderPass = render_pass;
+    framebuffer_info.renderPass = getRenderPass();
     framebuffer_info.attachmentCount = 1;
     framebuffer_info.width = swap_chain_extent.width;
     framebuffer_info.height = swap_chain_extent.height;
     framebuffer_info.layers = 1;
 
+    std::function<void(VkFramebuffer *)> deleter = [this](VkFramebuffer *framebuffer)
+    { vkDestroyFramebuffer(getDevice(), *framebuffer, nullptr); };
+
     for (size_t i = 0; i < swap_chain_image_views.size(); i++)
     {
-        framebuffer_info.pAttachments = &swap_chain_image_views[i];
-        if (vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swap_chain_framebuffers[i]) != VK_SUCCESS)
+        swap_chain_framebuffers[i] =
+            std::unique_ptr<VkFramebuffer, std::function<void(VkFramebuffer *)>>(new VkFramebuffer, deleter);
+        framebuffer_info.pAttachments = swap_chain_image_views[i].get();
+        if (vkCreateFramebuffer(getDevice(), &framebuffer_info, nullptr, swap_chain_framebuffers[i].get()) !=
+            VK_SUCCESS)
         {
-            RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create framebuffer");
+            RCLCPP_FATAL(node->get_logger(), "Failed to create framebuffer");
             throw std::runtime_error("Failed to create framebuffer");
         }
     }
@@ -408,15 +427,18 @@ void GuiEngine::createFramebuffers()
 
 void GuiEngine::createCommandPool()
 {
-    QueueFamilyIndices indices = findQueueFamilies(physical_device);
+    QueueFamilyIndices indices = findQueueFamilies(getPhysicalDevice());
     VkCommandPoolCreateInfo pool_info = {};
     pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     pool_info.queueFamilyIndex = indices.graphics_family.value();
 
-    if (vkCreateCommandPool(device, &pool_info, nullptr, &command_pool) != VK_SUCCESS)
+    std::function<void(VkCommandPool *)> deleter = [this](VkCommandPool *command_pool)
+    { vkDestroyCommandPool(getDevice(), *command_pool, nullptr); };
+    command_pool = std::unique_ptr<VkCommandPool, std::function<void(VkCommandPool *)>>(new VkCommandPool, deleter);
+    if (vkCreateCommandPool(getDevice(), &pool_info, nullptr, command_pool.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create command pool");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create command pool");
         throw std::runtime_error("Failed to create command pool");
     }
 }
@@ -434,9 +456,13 @@ void GuiEngine::createDescriptorPool()
     pool_info.pPoolSizes = &pool_size;
     pool_info.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-    if (vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptor_pool) != VK_SUCCESS)
+    std::function<void(VkDescriptorPool *)> deleter = [this](VkDescriptorPool *pool)
+    { vkDestroyDescriptorPool(getDevice(), *pool, nullptr); };
+    descriptor_pool =
+        std::unique_ptr<VkDescriptorPool, std::function<void(VkDescriptorPool *)>>(new VkDescriptorPool, deleter);
+    if (vkCreateDescriptorPool(getDevice(), &pool_info, nullptr, descriptor_pool.get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create descriptor pool");
+        RCLCPP_FATAL(node->get_logger(), "Failed to create descriptor pool");
         throw std::runtime_error("Failed to create descriptor pool");
     }
 }
@@ -447,13 +473,13 @@ void GuiEngine::createCommandBuffers()
 
     VkCommandBufferAllocateInfo alloc_info = {};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = command_pool;
+    alloc_info.commandPool = getCommandPool();
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandBufferCount = (uint32_t)command_buffers.size();
 
-    if (vkAllocateCommandBuffers(device, &alloc_info, command_buffers.data()) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(getDevice(), &alloc_info, command_buffers.data()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to allocate command buffers");
+        RCLCPP_FATAL(node->get_logger(), "Failed to allocate command buffers");
         throw std::runtime_error("Failed to allocate command buffers");
     }
 }
@@ -471,13 +497,24 @@ void GuiEngine::createSyncObjects()
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+    std::function<void(VkSemaphore *)> semaphore_deleter = [this](VkSemaphore *semaphore)
+    { vkDestroySemaphore(getDevice(), *semaphore, nullptr); };
+    std::function<void(VkFence *)> fence_deleter = [this](VkFence *fence)
+    { vkDestroyFence(getDevice(), *fence, nullptr); };
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        if (vkCreateSemaphore(device, &semaphore_info, nullptr, &image_available_semaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphore_info, nullptr, &render_finished_semaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(device, &fence_info, nullptr, &in_flight_fences[i]) != VK_SUCCESS)
+        image_available_semaphores[i] =
+            std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>(new VkSemaphore, semaphore_deleter);
+        render_finished_semaphores[i] =
+            std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>(new VkSemaphore, semaphore_deleter);
+        in_flight_fences[i] = std::unique_ptr<VkFence, std::function<void(VkFence *)>>(new VkFence, fence_deleter);
+        if (vkCreateSemaphore(getDevice(), &semaphore_info, nullptr, image_available_semaphores[i].get()) !=
+                VK_SUCCESS ||
+            vkCreateSemaphore(getDevice(), &semaphore_info, nullptr, render_finished_semaphores[i].get()) !=
+                VK_SUCCESS ||
+            vkCreateFence(getDevice(), &fence_info, nullptr, in_flight_fences[i].get()) != VK_SUCCESS)
         {
-            RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to create synchronization objects for a frame");
+            RCLCPP_FATAL(node->get_logger(), "Failed to create synchronization objects for a frame");
             throw std::runtime_error("Failed to create synchronization objects for a frame");
         }
     }
@@ -557,7 +594,7 @@ QueueFamilyIndices GuiEngine::findQueueFamilies(const VkPhysicalDevice &device)
         }
 
         VkBool32 present_support = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, getSurface(), &present_support);
 
         if (queue_family.queueCount > 0 && present_support)
         {
@@ -597,24 +634,25 @@ SwapChainSupportDetails GuiEngine::querySwapChainSupport(const VkPhysicalDevice 
 {
     SwapChainSupportDetails details;
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, getSurface(), &details.capabilities);
 
     uint32_t format_count;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, getSurface(), &format_count, nullptr);
 
     if (format_count != 0)
     {
         details.formats.resize(format_count);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, details.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, getSurface(), &format_count, details.formats.data());
     }
 
     uint32_t present_mode_count;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, getSurface(), &present_mode_count, nullptr);
 
     if (present_mode_count != 0)
     {
         details.present_modes.resize(present_mode_count);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, getSurface(), &present_mode_count,
+                                                  details.present_modes.data());
     }
 
     return details;
@@ -645,7 +683,7 @@ void GuiEngine::rebuildSwapChain()
         glfwWaitEvents();
     }
 
-    vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(getDevice());
     cleanupSwapChain();
 
     createSwapChain();
@@ -660,14 +698,14 @@ void GuiEngine::recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t
 
     if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to begin recording command buffer!");
+        RCLCPP_FATAL(node->get_logger(), "Failed to begin recording command buffer!");
         throw std::runtime_error("Failed to begin recording command buffer!");
     }
 
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = render_pass;
-    render_pass_info.framebuffer = swap_chain_framebuffers[image_index];
+    render_pass_info.renderPass = getRenderPass();
+    render_pass_info.framebuffer = getFrameBuffer(image_index);
     render_pass_info.renderArea.offset = {0, 0};
     render_pass_info.renderArea.extent = swap_chain_extent;
     render_pass_info.clearValueCount = 1;
@@ -679,7 +717,7 @@ void GuiEngine::recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t
     vkCmdEndRenderPass(command_buffer);
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to record command buffer!");
+        RCLCPP_FATAL(node->get_logger(), "Failed to record command buffer!");
         throw std::runtime_error("Failed to record command buffer!");
     }
 }
@@ -688,11 +726,12 @@ GuiEngine::~GuiEngine() { cleanup(); }
 
 void GuiEngine::draw()
 {
-    vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(getDevice(), 1, in_flight_fences[current_frame].get(), VK_TRUE, UINT64_MAX);
 
     uint32_t image_index;
-    VkResult result = vkAcquireNextImageKHR(device, swap_chain, UINT64_MAX, image_available_semaphores[current_frame],
-                                            VK_NULL_HANDLE, &image_index);
+    VkResult result =
+        vkAcquireNextImageKHR(getDevice(), getSwapChain(), UINT64_MAX, *image_available_semaphores[current_frame].get(),
+                              VK_NULL_HANDLE, &image_index);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -701,11 +740,11 @@ void GuiEngine::draw()
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to acquire swap chain image!");
+        RCLCPP_FATAL(node->get_logger(), "Failed to acquire swap chain image!");
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    vkResetFences(device, 1, &in_flight_fences[current_frame]);
+    vkResetFences(getDevice(), 1, in_flight_fences[current_frame].get());
 
     vkResetCommandBuffer(command_buffers[current_frame], 0);
     recordRenderPass(command_buffers[current_frame], image_index);
@@ -713,7 +752,7 @@ void GuiEngine::draw()
     VkSubmitInfo submit_info{};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore wait_semaphores[] = {image_available_semaphores[current_frame]};
+    VkSemaphore wait_semaphores[] = {*image_available_semaphores[current_frame].get()};
     VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submit_info.waitSemaphoreCount = 1;
     submit_info.pWaitSemaphores = wait_semaphores;
@@ -722,13 +761,13 @@ void GuiEngine::draw()
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buffers[current_frame];
 
-    VkSemaphore signal_semaphores[] = {render_finished_semaphores[current_frame]};
+    VkSemaphore signal_semaphores[] = {*render_finished_semaphores[current_frame].get()};
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
-    if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS)
+    if (vkQueueSubmit(graphics_queue, 1, &submit_info, *in_flight_fences[current_frame].get()) != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to submit draw command buffer!");
+        RCLCPP_FATAL(node->get_logger(), "Failed to submit draw command buffer!");
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
 
@@ -738,7 +777,7 @@ void GuiEngine::draw()
     present_info.waitSemaphoreCount = 1;
     present_info.pWaitSemaphores = signal_semaphores;
 
-    VkSwapchainKHR swap_chains[] = {swap_chain};
+    VkSwapchainKHR swap_chains[] = {getSwapChain()};
     present_info.swapchainCount = 1;
     present_info.pSwapchains = swap_chains;
 
@@ -753,7 +792,7 @@ void GuiEngine::draw()
     }
     else if (result != VK_SUCCESS)
     {
-        RCLCPP_FATAL(rclcpp::get_logger("GuiEngine"), "Failed to present swap chain image!");
+        RCLCPP_FATAL(node->get_logger(), "Failed to present swap chain image!");
         throw std::runtime_error("Failed to present swap chain image!");
     }
 
@@ -771,8 +810,13 @@ void GuiEngine::initGlfw()
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = std::unique_ptr<GLFWwindow, WindowDeleter>(
-        glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr));
+    std::function<void(GLFWwindow *)> deleter = [](GLFWwindow *window)
+    {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+    };
+    window = std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow *)>>(
+        glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr), deleter);
     glfwSetWindowUserPointer(getWindow(), this);
     glfwSetFramebufferSizeCallback(getWindow(), framebufferResizeCallback);
 }
@@ -804,50 +848,39 @@ void GuiEngine::init()
 
 void GuiEngine::cleanupSwapChain()
 {
-    for (auto framebuffer : swap_chain_framebuffers)
-    {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-    }
-    for (auto image_view : swap_chain_image_views)
-    {
-        vkDestroyImageView(device, image_view, nullptr);
-    }
-    vkDestroySwapchainKHR(device, swap_chain, nullptr);
+    swap_chain_framebuffers.clear();
+    swap_chain_image_views.clear();
+    swap_chain.reset();
 }
 
 void GuiEngine::cleanup()
 {
-    vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(getDevice());
     textures.clear();
     imgui_engine.reset();
     cleanupSwapChain();
-    vkDestroyRenderPass(device, render_pass, nullptr);
-    vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        vkDestroySemaphore(device, render_finished_semaphores[i], nullptr);
-        vkDestroySemaphore(device, image_available_semaphores[i], nullptr);
-        vkDestroyFence(device, in_flight_fences[i], nullptr);
-    }
-    vkDestroyCommandPool(device, command_pool, nullptr);
-    vkDestroyDevice(device, nullptr);
-    vkDestroySurfaceKHR(instance, surface, nullptr);
+    render_pass.reset();
+    descriptor_pool.reset();
+    render_finished_semaphores.clear();
+    image_available_semaphores.clear();
+    in_flight_fences.clear();
+    command_pool.reset();
     if (enable_validation_layers)
     {
-        DestroyDebugUtilsMessengerEXT(instance, debug_messenger, nullptr);
+        debug_messenger.reset();
     }
-    vkDestroyInstance(instance, nullptr);
-    glfwTerminate();
+    device.reset();
 }
 
-GuiEngine::GuiEngine(const std::string &application_name)
-    : device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME}), application_name(application_name),
+GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node)
+    : device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME}), application_name(application_name), node(node),
       imgui_engine(std::make_unique<ImGuiEngine>())
 {
 }
 
-GuiEngine::GuiEngine(const std::string &application_name, const std::vector<const char *> &device_extensions)
-    : device_extensions(device_extensions), application_name(application_name),
+GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
+                     const std::vector<const char *> &device_extensions)
+    : device_extensions(device_extensions), application_name(application_name), node(node),
       imgui_engine(std::make_unique<ImGuiEngine>())
 {
 }
@@ -856,11 +889,11 @@ bool GuiEngine::addTexture(const std::string &name, unsigned char *image_data, i
 {
     if (textures.find(name) != textures.end())
     {
-        RCLCPP_WARN(rclcpp::get_logger("GuiEngine"), "Texture %s already exists!", name.c_str());
+        RCLCPP_WARN(node->get_logger(), "Texture %s already exists!", name.c_str());
         return false;
     }
-    textures.emplace(name, std::make_shared<TextureLoader>(image_data, width, height, channels, device, physical_device,
-                                                           command_pool, graphics_queue));
+    textures.emplace(name, std::make_shared<TextureLoader>(image_data, width, height, channels, getDevice(),
+                                                           getPhysicalDevice(), getCommandPool(), graphics_queue));
     return true;
 }
 
@@ -868,7 +901,7 @@ std::shared_ptr<TextureLoader> GuiEngine::getTexture(const std::string &name)
 {
     if (textures.find(name) == textures.end())
     {
-        RCLCPP_ERROR(rclcpp::get_logger("GuiEngine"), "Texture with name %s does not exist!", name.c_str());
+        RCLCPP_ERROR(node->get_logger(), "Texture with name %s does not exist!", name.c_str());
         throw std::runtime_error("Texture with name " + name + " does not exist!");
     }
     return textures.at(name);
