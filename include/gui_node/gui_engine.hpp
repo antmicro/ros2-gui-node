@@ -90,39 +90,38 @@ public:
 class TextureLoader
 {
 private:
-    VkBuffer upload_buffer;              ///< Buffer for uploading data to the GPU
-    VkDescriptorSet descriptor_set;      ///< Descriptor set for the textures
-    VkDevice device;                     ///< Vulkan device
-    VkDeviceMemory image_memory;         ///< Memory for the textures
-    VkDeviceMemory upload_buffer_memory; ///< Memory for the upload buffer
-    VkImage image;                       ///< Image for the textures
-    VkImageView image_view;              ///< Image view for the textures
-    VkSampler sampler;                   ///< Sampler for the textures
-    int channels{4};                     ///< Number of channels in the textures
-    int height;                          ///< Height of the textures
-    int width;                           ///< Width of the textures
+    std::unique_ptr<VkBuffer, std::function<void(VkBuffer *)>> upload_buffer; ///< Buffer for uploading data to the GPU
+    std::unique_ptr<VkSampler, std::function<void(VkSampler *)>> sampler;     ///< Sampler for the textures
+    std::unique_ptr<VkImageView, std::function<void(VkImageView *)>> image_view; ///< Image view for the textures
+    std::unique_ptr<VkImage, std::function<void(VkImage *)>> image;              ///< Image for the textures
+    std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>> image_memory; ///< Memory for the textures
+    std::shared_ptr<GuiEngine> gui_engine;                                               ///< Pointer to the GUI engine.
+    VkDescriptorSet descriptor_set;              ///< Descriptor set for the textures
+    int channels;                                ///< Number of channels in the textures
+    int height;                                  ///< Height of the textures
+    int width;                                   ///< Width of the textures
+    std::shared_ptr<unsigned char *> image_data; ///< Data of the textures
+
+    /// Memory for the upload buffer
+    std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>> upload_buffer_memory;
 
     /**
      * Finds a memory type that has the requested properties.
      *
      * @param type_filter Bitmask of memory types to consider.
-     * @param physical_device Physical device to use.
      * @param properties Properties to look for.
      * @return Index of the memory type that has the requested properties.
      *
      * @throw std::runtime_error If no suitable memory type is found.
      */
-    uint32_t findMemoryType(uint32_t type_filter, const VkPhysicalDevice &physical_device,
-                            VkMemoryPropertyFlags properties);
+    uint32_t findMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties);
 
     /**
      * Creates an image.
      *
-     * @param physical_device Physical device to use.
-     *
      * @throw std::runtime_error If the image cannot be created.
      */
-    void createImage(const VkPhysicalDevice &physical_device);
+    void createImage();
 
     /**
      * Creates image view for the image.
@@ -141,22 +140,16 @@ private:
     /**
      * Creates a buffer for uploading data to the GPU.
      *
-     * @param image_size Size of the image.
-     * @param physical_device Physical device to use.
-     *
      * @throw std::runtime_error If the buffer cannot be created.
      */
-    void createUploadBuffer(size_t image_size, const VkPhysicalDevice &physical_device);
+    void createUploadBuffer();
 
     /**
      * Uploads the image data to the GPU.
      *
-     * @param image_size Size of the image.
-     * @param image_data Pointer to the image data.
-     *
      * @throw std::runtime_error If the data cannot be uploaded.
      */
-    void uploadToBuffer(size_t image_size, unsigned char *image_data);
+    void uploadToBuffer();
 
     /**
      * Records a command buffer for copying the image data to the GPU.
@@ -172,23 +165,24 @@ public:
     /**
      * Creates a texture loader.
      *
-     * @param image_data The image data to be loaded.
-     * @param width The width of the image.
-     * @param height The height of the image.
-     * @param channels The number of channels in the image.
-     * @param device Vulkan logical device.
-     * @param physical_device Vulkan physical device.
-     * @param command_pool Vulkan command pool.
-     * @param graphics_queue Graphics queue.
+     * @param gui_engine Pointer to the GUI engine.
+     * @param image_data Pointer to the image data.
+     * @param width Width of the image.
+     * @param height Height of the image.
+     * @param channels Number of channels in the image.
      */
-    TextureLoader(unsigned char *image_data, int width, int height, int channels, const VkDevice &device,
-                  const VkPhysicalDevice &physical_device, const VkCommandPool &command_pool,
-                  const VkQueue &graphics_queue);
+    TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<unsigned char *> image_data, int width,
+                  int height, int channels);
 
     /**
      * Destroys the texture loader and frees all resources.
      */
     ~TextureLoader();
+
+    /**
+     * Loads the texture and creates upload_buffer for it.
+     */
+    void init();
 
     /**
      * Returns the descriptor set.
@@ -214,20 +208,21 @@ public:
 
 class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 {
-    std::unique_ptr<VkPhysicalDevice> physical_device; ///< Physical device (GPU) that Vulkan will be using
+    VkExtent2D swap_chain_extent;                      ///< Swap chain extent
+    VkFormat swap_chain_image_format;                  ///< Swap chain image format
     VkQueue graphics_queue;                            ///< Graphics queue
     VkQueue present_queue;                             ///< Queue for presenting images to the screen
-    std::vector<VkImage> swap_chain_images;            ///< Swap chain images
-    VkFormat swap_chain_image_format;                  ///< Swap chain image format
-    VkExtent2D swap_chain_extent;                      ///< Swap chain extent
-    std::vector<VkCommandBuffer> command_buffers;      ///< Command buffers
-    uint32_t current_frame = 0;                        ///< Current frame
     bool framebuffer_resized = false;                  ///< Flag for when the framebuffer is resized
-    std::vector<const char *> device_extensions;       ///< Device extensions required for the application
+    bool initialized = false;                          ///< Flag for when the GUI engine is initialized
     const int MAX_FRAMES_IN_FLIGHT = 2;                ///< Maximum number of frames in flight
     const std::string application_name;                ///< Name of the application
     std::shared_ptr<GuiNode> node;                     ///< The ROS2 node for the GUI
     std::unique_ptr<ImGuiEngine> imgui_engine;         ///< ImGui engine
+    std::unique_ptr<VkPhysicalDevice> physical_device; ///< Physical device (GPU) that Vulkan will be using
+    std::vector<VkCommandBuffer> command_buffers;      ///< Command buffers
+    std::vector<VkImage> swap_chain_images;            ///< Swap chain images
+    std::vector<const char *> device_extensions;       ///< Device extensions required for the application
+    uint32_t current_frame = 0;                        ///< Current frame
 
     std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow *)>> window;      ///< GLFW Window
     std::unique_ptr<VkDevice, std::function<void(VkDevice *)>> device;          ///< Vulkan logical device
@@ -520,13 +515,14 @@ public:
      * Adds a new texture object to the GUI.
      *
      * @param name The name of the texture.
-     * @param image_data The image data to be loaded.
-     * @param width The width of the image.
-     * @param height The height of the image.
-     * @param channels The number of channels in the image.
+     * @param data The data of the texture.
+     * @param width The width of the texture.
+     * @param height The height of the texture.
+     * @param channels The number of channels of the texture.
      * @return True if the texture was successfully added, false otherwise.
      */
-    bool addTexture(const std::string &name, unsigned char *image_data, int width, int height, int channels);
+    bool addTexture(const std::string &name, std::shared_ptr<unsigned char *> data, int width, int height,
+                    int channels);
 
     /**
      * Get pointer to GLFW window.

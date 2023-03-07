@@ -852,6 +852,11 @@ void GuiEngine::init()
     initGlfw();
     initVulkan();
     imgui_engine->init(shared_from_this());
+    for (std::pair<std::string, std::shared_ptr<TextureLoader>> texture : textures)
+    {
+        texture.second->init();
+    }
+    initialized = true;
     return;
 }
 
@@ -882,27 +887,32 @@ void GuiEngine::cleanup()
 }
 
 GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node)
-    : device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME}), application_name(application_name), node(node),
-      imgui_engine(std::make_unique<ImGuiEngine>())
+    : application_name(application_name), node(node), imgui_engine(std::make_unique<ImGuiEngine>()),
+      device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME})
 {
 }
 
 GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
                      const std::vector<const char *> &device_extensions)
-    : device_extensions(device_extensions), application_name(application_name), node(node),
-      imgui_engine(std::make_unique<ImGuiEngine>())
+    : application_name(application_name), node(node), imgui_engine(std::make_unique<ImGuiEngine>()),
+      device_extensions(device_extensions)
 {
 }
 
-bool GuiEngine::addTexture(const std::string &name, unsigned char *image_data, int width, int height, int channels)
+bool GuiEngine::addTexture(const std::string &name, std::shared_ptr<unsigned char *> data, int width, int height,
+                           int channels)
 {
+    if (initialized)
+    {
+        RCLCPP_ERROR(rclcpp::get_logger("GuiEngine"), "Cannot add texture after initialization!");
+        return false;
+    }
     if (textures.find(name) != textures.end())
     {
         RCLCPP_WARN(node->get_logger(), "Texture %s already exists!", name.c_str());
         return false;
     }
-    textures.emplace(name, std::make_shared<TextureLoader>(image_data, width, height, channels, getDevice(),
-                                                           getPhysicalDevice(), getCommandPool(), graphics_queue));
+    textures.emplace(name, std::make_shared<TextureLoader>(shared_from_this(), data, width, height, channels));
     return true;
 }
 
@@ -974,33 +984,28 @@ ImGuiEngine::~ImGuiEngine()
     ImGui::DestroyContext();
 }
 
-TextureLoader::TextureLoader(unsigned char *image_data, int width, int height, int channels, const VkDevice &device,
-                             const VkPhysicalDevice &physical_device, const VkCommandPool &command_pool,
-                             const VkQueue &graphics_queue)
-    : device(device)
+TextureLoader::TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<unsigned char *> image_data,
+                             int width, int height, int channels)
+    : gui_engine(gui_engine), channels(channels), height(height), width(width), image_data(image_data)
 {
-    size_t image_size = width * height * channels;
-    this->width = width;
-    this->height = height;
-    this->channels = channels;
-
-    createImage(physical_device);
-    createImageView();
-    createSampler();
-
-    descriptor_set = ImGui_ImplVulkan_AddTexture(sampler, image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    createUploadBuffer(image_size, physical_device);
-    uploadToBuffer(image_size, image_data);
-
-    recordCommandBuffer(command_pool, graphics_queue);
 }
 
-uint32_t TextureLoader::findMemoryType(uint32_t type_filter, const VkPhysicalDevice &physical_device,
-                                       VkMemoryPropertyFlags properties)
+void TextureLoader::init()
+{
+    createImage();
+    createImageView();
+    createSampler();
+    descriptor_set =
+        ImGui_ImplVulkan_AddTexture(*sampler.get(), *image_view.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    createUploadBuffer();
+    uploadToBuffer();
+    recordCommandBuffer(gui_engine->getCommandPool(), gui_engine->getGraphicsQueue());
+}
+
+uint32_t TextureLoader::findMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties mem_properties;
-    vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
+    vkGetPhysicalDeviceMemoryProperties(gui_engine->getPhysicalDevice(), &mem_properties);
 
     for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
     {
@@ -1014,7 +1019,7 @@ uint32_t TextureLoader::findMemoryType(uint32_t type_filter, const VkPhysicalDev
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-void TextureLoader::createImage(const VkPhysicalDevice &physical_device)
+void TextureLoader::createImage()
 {
     VkImageCreateInfo image_info{};
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1030,40 +1035,50 @@ void TextureLoader::createImage(const VkPhysicalDevice &physical_device)
     image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    if (vkCreateImage(device, &image_info, nullptr, &image) != VK_SUCCESS)
+    std::function<void(VkImage *)> image_deleter = [this](VkImage *image)
+    { vkDestroyImage(gui_engine->getDevice(), *image, nullptr); };
+    image = std::unique_ptr<VkImage, std::function<void(VkImage *)>>(new VkImage, image_deleter);
+    if (vkCreateImage(gui_engine->getDevice(), &image_info, nullptr, image.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create image!");
         throw std::runtime_error("Failed to create image!");
     }
 
     VkMemoryRequirements mem_requirements;
-    vkGetImageMemoryRequirements(device, image, &mem_requirements);
+    vkGetImageMemoryRequirements(gui_engine->getDevice(), *image.get(), &mem_requirements);
 
     VkMemoryAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex =
-        findMemoryType(mem_requirements.memoryTypeBits, physical_device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (vkAllocateMemory(device, &alloc_info, nullptr, &image_memory) != VK_SUCCESS)
+    alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    std::function<void(VkDeviceMemory *)> memory_deleter = [this](VkDeviceMemory *memory)
+    { vkFreeMemory(gui_engine->getDevice(), *memory, nullptr); };
+    image_memory =
+        std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>>(new VkDeviceMemory, memory_deleter);
+    if (vkAllocateMemory(gui_engine->getDevice(), &alloc_info, nullptr, image_memory.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate image memory!");
         throw std::runtime_error("Failed to allocate image memory!");
     }
 
-    vkBindImageMemory(device, image, image_memory, 0);
+    vkBindImageMemory(gui_engine->getDevice(), *image.get(), *image_memory.get(), 0);
 }
 
 void TextureLoader::createImageView()
 {
     VkImageViewCreateInfo view_info{};
     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    view_info.image = image;
+    view_info.image = *image.get();
     view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
     view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     view_info.subresourceRange.baseMipLevel = 0;
     view_info.subresourceRange.levelCount = 1;
-    if (vkCreateImageView(device, &view_info, nullptr, &image_view) != VK_SUCCESS)
+    view_info.subresourceRange.layerCount = 1;
+    std::function<void(VkImageView *)> deleter = [this](VkImageView *image_view)
+    { vkDestroyImageView(gui_engine->getDevice(), *image_view, nullptr); };
+    image_view = std::unique_ptr<VkImageView, std::function<void(VkImageView *)>>(new VkImageView, deleter);
+    if (vkCreateImageView(gui_engine->getDevice(), &view_info, nullptr, image_view.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture image view!");
         throw std::runtime_error("Failed to create texture image view!");
@@ -1083,67 +1098,80 @@ void TextureLoader::createSampler()
     sampler_info.minLod = -1000;
     sampler_info.maxLod = 1000;
     sampler_info.maxAnisotropy = 1.0f;
-    if (vkCreateSampler(device, &sampler_info, nullptr, &sampler) != VK_SUCCESS)
+    std::function<void(VkSampler *)> deleter = [this](VkSampler *sampler)
+    { vkDestroySampler(gui_engine->getDevice(), *sampler, nullptr); };
+    sampler = std::unique_ptr<VkSampler, std::function<void(VkSampler *)>>(new VkSampler, deleter);
+    if (vkCreateSampler(gui_engine->getDevice(), &sampler_info, nullptr, sampler.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture sampler!");
         throw std::runtime_error("Failed to create texture sampler!");
     }
 }
 
-void TextureLoader::createUploadBuffer(size_t image_size, const VkPhysicalDevice &physical_device)
+void TextureLoader::createUploadBuffer()
 {
+    size_t image_size = width * height * channels;
     VkBufferCreateInfo buffer_info{};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_info.size = image_size;
     buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    if (vkCreateBuffer(device, &buffer_info, nullptr, &upload_buffer) != VK_SUCCESS)
+
+    std::function<void(VkBuffer *)> upload_buffer_deleter = [this](VkBuffer *buffer)
+    { vkDestroyBuffer(gui_engine->getDevice(), *buffer, nullptr); };
+    upload_buffer = std::unique_ptr<VkBuffer, std::function<void(VkBuffer *)>>(new VkBuffer, upload_buffer_deleter);
+    if (vkCreateBuffer(gui_engine->getDevice(), &buffer_info, nullptr, upload_buffer.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create buffer!");
         throw std::runtime_error("Failed to create buffer!");
     }
 
     VkMemoryRequirements mem_requirements;
-    vkGetBufferMemoryRequirements(device, upload_buffer, &mem_requirements);
+    vkGetBufferMemoryRequirements(gui_engine->getDevice(), *upload_buffer.get(), &mem_requirements);
 
     VkMemoryAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex =
-        findMemoryType(mem_requirements.memoryTypeBits, physical_device, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    if (vkAllocateMemory(device, &alloc_info, nullptr, &upload_buffer_memory) != VK_SUCCESS)
+    alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+    std::function<void(VkDeviceMemory *)> upload_buffer_memory_deleter = [this](VkDeviceMemory *memory)
+    { vkFreeMemory(gui_engine->getDevice(), *memory, nullptr); };
+    upload_buffer_memory = std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>>(
+        new VkDeviceMemory, upload_buffer_memory_deleter);
+    if (vkAllocateMemory(gui_engine->getDevice(), &alloc_info, nullptr, upload_buffer_memory.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate buffer memory!");
         throw std::runtime_error("Failed to allocate buffer memory!");
     }
 
-    if (vkBindBufferMemory(device, upload_buffer, upload_buffer_memory, 0) != VK_SUCCESS)
+    if (vkBindBufferMemory(gui_engine->getDevice(), *upload_buffer.get(), *upload_buffer_memory.get(), 0) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to bind buffer memory!");
         throw std::runtime_error("Failed to bind buffer memory!");
     }
 }
 
-void TextureLoader::uploadToBuffer(size_t image_size, unsigned char *image_data)
+void TextureLoader::uploadToBuffer()
 {
+    size_t image_size = width * height * channels;
     void *map = nullptr;
-    if (vkMapMemory(device, upload_buffer_memory, 0, VK_WHOLE_SIZE, 0, &map) != VK_SUCCESS)
+    if (vkMapMemory(gui_engine->getDevice(), *upload_buffer_memory.get(), 0, VK_WHOLE_SIZE, 0, &map) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to map memory!");
         throw std::runtime_error("Failed to map memory!");
     }
 
-    memcpy(map, image_data, image_size);
-    VkMappedMemoryRange range[1] = {};
-    range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    range[0].memory = upload_buffer_memory;
-    range[0].size = VK_WHOLE_SIZE;
-    if (vkFlushMappedMemoryRanges(device, 1, range) != VK_SUCCESS)
+    memcpy(map, image_data.get(), image_size);
+    VkMappedMemoryRange range = {};
+    range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    range.memory = *upload_buffer_memory.get();
+    range.size = VK_WHOLE_SIZE;
+    if (vkFlushMappedMemoryRanges(gui_engine->getDevice(), 1, &range) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to flush memory!");
         throw std::runtime_error("Failed to flush memory!");
     }
-    vkUnmapMemory(device, upload_buffer_memory);
+    vkUnmapMemory(gui_engine->getDevice(), *upload_buffer_memory.get());
 }
 
 void TextureLoader::recordCommandBuffer(const VkCommandPool &command_pool, const VkQueue &graphics_queue)
@@ -1156,7 +1184,7 @@ void TextureLoader::recordCommandBuffer(const VkCommandPool &command_pool, const
     alloc_info.commandPool = command_pool;
     alloc_info.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(device, &alloc_info, &command_buffer) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(gui_engine->getDevice(), &alloc_info, &command_buffer) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate command buffers!");
         throw std::runtime_error("Failed to allocate command buffers!");
@@ -1172,19 +1200,19 @@ void TextureLoader::recordCommandBuffer(const VkCommandPool &command_pool, const
     }
 
     // Copy buffer to image
-    VkImageMemoryBarrier copy_barrier[1] = {};
-    copy_barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    copy_barrier[0].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    copy_barrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    copy_barrier[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    copy_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    copy_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    copy_barrier[0].image = image;
-    copy_barrier[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    copy_barrier[0].subresourceRange.levelCount = 1;
-    copy_barrier[0].subresourceRange.layerCount = 1;
+    VkImageMemoryBarrier copy_barrier = {};
+    copy_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    copy_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    copy_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    copy_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    copy_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    copy_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    copy_barrier.image = *image.get();
+    copy_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy_barrier.subresourceRange.levelCount = 1;
+    copy_barrier.subresourceRange.layerCount = 1;
     vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                         nullptr, 1, copy_barrier);
+                         nullptr, 1, &copy_barrier);
 
     VkBufferImageCopy region = {};
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1192,22 +1220,23 @@ void TextureLoader::recordCommandBuffer(const VkCommandPool &command_pool, const
     region.imageExtent.width = width;
     region.imageExtent.height = height;
     region.imageExtent.depth = 1;
-    vkCmdCopyBufferToImage(command_buffer, upload_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(command_buffer, *upload_buffer.get(), *image.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                           &region);
 
-    VkImageMemoryBarrier use_barrier[1] = {};
-    use_barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    use_barrier[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    use_barrier[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    use_barrier[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    use_barrier[0].newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    use_barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    use_barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    use_barrier[0].image = image;
-    use_barrier[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    use_barrier[0].subresourceRange.levelCount = 1;
-    use_barrier[0].subresourceRange.layerCount = 1;
+    VkImageMemoryBarrier use_barrier = {};
+    use_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    use_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    use_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    use_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    use_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    use_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    use_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    use_barrier.image = *image.get();
+    use_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    use_barrier.subresourceRange.levelCount = 1;
+    use_barrier.subresourceRange.layerCount = 1;
     vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
-                         nullptr, 0, nullptr, 1, use_barrier);
+                         nullptr, 0, nullptr, 1, &use_barrier);
 
     // End command buffer
     VkSubmitInfo submit_info{};
@@ -1224,22 +1253,13 @@ void TextureLoader::recordCommandBuffer(const VkCommandPool &command_pool, const
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to submit draw command buffer!");
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
-    if (vkDeviceWaitIdle(device) != VK_SUCCESS)
+    if (vkDeviceWaitIdle(gui_engine->getDevice()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to wait for device to become idle!");
         throw std::runtime_error("Failed to wait for device to become idle!");
     }
 }
 
-TextureLoader::~TextureLoader()
-{
-    vkFreeMemory(device, upload_buffer_memory, nullptr);
-    vkDestroyBuffer(device, upload_buffer, nullptr);
-    vkDestroySampler(device, sampler, nullptr);
-    vkDestroyImageView(device, image_view, nullptr);
-    vkDestroyImage(device, image, nullptr);
-    vkFreeMemory(device, image_memory, nullptr);
-    ImGui_ImplVulkan_RemoveTexture(descriptor_set);
-}
+TextureLoader::~TextureLoader() { ImGui_ImplVulkan_RemoveTexture(descriptor_set); }
 
 } // namespace gui_node
