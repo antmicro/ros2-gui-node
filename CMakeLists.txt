@@ -31,8 +31,6 @@ include_directories(include
     Vulkan::Headers
 )
 
-set(node_plugins "")
-
 set(IMGUI_SOURCES
     third-party/imgui/backends/imgui_impl_glfw.cpp
     third-party/imgui/backends/imgui_impl_vulkan.cpp
@@ -43,20 +41,6 @@ set(IMGUI_SOURCES
 )
 
 add_compile_definitions(GLFW_INCLUDE_VULKAN)
-
-#######################
-# GUI Node
-#######################
-add_library(gui_node SHARED
-    src/gui_node.cpp
-)
-ament_target_dependencies(gui_node
-    rclcpp
-    rclcpp_components
-    std_msgs
-)
-rclcpp_components_register_nodes(gui_node "gui_node::GuiNode")
-set(node_plugins "${gui_node}gui_node::GuiNode;$<TARGET_FILE:gui_node>\n")
 
 #######################
 # Publish node
@@ -80,14 +64,36 @@ ament_target_dependencies(gui_node_sample_publisher
 )
 
 rclcpp_components_register_nodes(gui_node_sample_publisher "gui_node::TimePublisher")
-set(node_plugins "${gui_node_sample_publisher}gui_node::TimePublisher;$<TARGET_FILE:publisher_node>\n")
+
+#######################
+# Subscribe node
+#######################
+add_library(gui_node_sample_subscriber SHARED
+    src/samples/subscriber_node.cpp
+    src/gui_node.cpp
+    src/gui_engine.cpp
+    ${IMGUI_SOURCES}
+)
+
+target_link_libraries(gui_node_sample_subscriber
+    glfw
+    Vulkan::Vulkan
+)
+
+ament_target_dependencies(gui_node_sample_subscriber
+    rclcpp
+    rclcpp_components
+    std_msgs
+)
+
+rclcpp_components_register_nodes(gui_node_sample_subscriber "gui_node::TimeSubscriber")
 
 #######################
 # Install
 #######################
 install(TARGETS
-    gui_node
     gui_node_sample_publisher
+    gui_node_sample_subscriber
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin

@@ -4,7 +4,7 @@ from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-    container = ComposableNodeContainer(
+    topic_publisher = ComposableNodeContainer(
         name='time_publisher_container',
         namespace='',
         package='rclcpp_components',
@@ -18,4 +18,18 @@ def generate_launch_description():
         output='both',
     )
 
-    return launch.LaunchDescription([container])
+    gui_topic_subscriber = ComposableNodeContainer(
+        name='gui_subscriber_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='gui_node',
+                plugin='gui_node::TimeSubscriber',
+                name='gui_subscriber')
+        ],
+        output='both',
+    )
+
+    return launch.LaunchDescription([topic_publisher, gui_topic_subscriber])
