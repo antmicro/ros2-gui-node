@@ -1,6 +1,3 @@
-#ifndef GUI_NODE_ROS_DATA_ROS_SUBSCRIBER_DATA_HPP
-#define GUI_NODE_ROS_DATA_ROS_SUBSCRIBER_DATA_HPP
-
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
@@ -26,10 +23,11 @@ private:
      *
      * @param msg Message to convert to data
      */
-    void callback(const typename Tmsg::SharedPtr &msg) { Tdata data = data_function(msg); }
+    void callback(const typename Tmsg::SharedPtr &msg) { data = data_function(msg); }
 
     typename rclcpp::Subscription<Tmsg>::SharedPtr subscriber;          ///< Subscriber
     std::function<Tdata(const typename Tmsg::SharedPtr)> data_function; ///< Function to convert message to data
+    Tdata data;                                                         ///< Data
 public:
     /**
      * Constructor
@@ -46,7 +44,13 @@ public:
         subscriber = node->create_subscription<Tmsg>(
             topic, queue_size, [this](const typename Tmsg::SharedPtr msg) -> void { this->callback(msg); });
     }
+
+    /**
+     * Get the last received data
+     *
+     * @return The last received data
+     */
+    Tdata getData() { return data; }
 };
 
 } // namespace gui_node
-#endif // GUI_NODE_ROS_DATA_ROS_SUBSCRIBER_DATA_HPP

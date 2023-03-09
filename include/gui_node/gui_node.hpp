@@ -76,7 +76,7 @@ class GuiNode : public rclcpp::Node
 private:
     std::unordered_map<std::string, std::shared_ptr<RosData>> ros_data_map; ///< Map of RosData nodes
     std::unordered_map<std::string, std::shared_ptr<Widget>> widget_map;    ///< Map of widgets
-    std::unique_ptr<GuiEngine> gui_engine;                                  ///< The GUI engine
+    std::shared_ptr<GuiEngine> gui_engine;                                  ///< The GUI engine
     rclcpp::TimerBase::SharedPtr timer;                                     ///< The timer used to update the GUI
 public:
     /**

@@ -1,6 +1,3 @@
-#ifndef GUI_NODE_ROS_DATA_ROS_SERVER_DATA_HPP
-#define GUI_NODE_ROS_DATA_ROS_SERVER_DATA_HPP
-
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
@@ -14,8 +11,9 @@ namespace gui_node
  * Data class supporting ROS2 service server nodes.
  *
  * @tparam Tmsg Type of ROS2 service message.
+ * @tparam Tdata Type of data to be stored in the class.
  */
-template <class Tmsg> class RosServiceServerData : public RosData
+template <class Tmsg, class Tdata> class RosServiceServerData : public RosData
 {
 private:
     /**
@@ -27,23 +25,24 @@ private:
      */
     void callback(typename Tmsg::Request::SharedPtr request, typename Tmsg::Response::SharedPtr response)
     {
-        service_function(request, response);
+        data = service_function(request, response);
     }
 
     typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server.
     std::function<void(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)>
         service_function; ///< The service function to process requests.
+    Tdata data;           ///< The data from the service request.
 public:
     /**
      * Constructor.
      *
      * @param node The node to create the service server on.
      * @param service_name The name of the ROS2 service.
-     * @param service_function The service function to process requests.
+     * @param service_function The service function to process requests, must return data from the request.
      */
     RosServiceServerData(
         std::shared_ptr<GuiNode> node, const std::string &service_name,
-        std::function<void(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)> service_function)
+        std::function<Tdata(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)> service_function)
         : RosData(node), service_function(service_function)
     {
         service = node->create_service<Tmsg>(
@@ -51,7 +50,13 @@ public:
             [this](typename Tmsg::Request::SharedPtr request, typename Tmsg::Response::SharedPtr response) -> void
             { callback(request, response); });
     }
+
+    /**
+     * Get the data from the service request.
+     *
+     * @return The data from the service request.
+     */
+    Tdata get_data() const { return data; }
 };
 
-};     // namespace gui_node
-#endif // GUI_NODE_ROS_DATA_ROS_SERVER_DATA_HPP
+}; // namespace gui_node

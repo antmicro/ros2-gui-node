@@ -1,6 +1,3 @@
-#ifndef GUI_NODE_ROS_DATA_ROS_CLIENT_DATA_HPP
-#define GUI_NODE_ROS_DATA_ROS_CLIENT_DATA_HPP
-
 #pragma once
 
 #include <chrono>
@@ -30,14 +27,14 @@ private:
         auto result = future.get();
         if (result != nullptr)
         {
-            // TODO: Cache the data
-            auto data = callback_function(result);
+            data = *callback_function(result);
         }
     }
 
     typename rclcpp::Client<Tmsg>::SharedPtr client; ///< Client of the service
     std::function<typename std::shared_ptr<Tdata>(typename std::shared_ptr<typename Tmsg::Response>)>
         callback_function; ///< Proccesses the response from the service
+    Tdata data;            ///< Last received data
 
 public:
     /**
@@ -75,7 +72,13 @@ public:
         auto future_result = client->async_send_request(
             request, std::bind(&RosServiceClientData::process_response, this, std::placeholders::_1));
     }
+
+    /**
+     * Returns the last received data.
+     *
+     * @return The last received data.
+     */
+    Tdata getData() { return data; }
 };
 
-};     // namespace gui_node
-#endif // GUI_NODE_ROS_DATA_ROS_CLIENT_DATA_HPP
+}; // namespace gui_node

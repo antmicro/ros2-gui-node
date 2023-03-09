@@ -1,6 +1,3 @@
-#ifndef GUI_NODE_ROS_DATA_ROS_PUBLISHER_DATA_HPP
-#define GUI_NODE_ROS_DATA_ROS_PUBLISHER_DATA_HPP
-
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
@@ -21,6 +18,7 @@ template <class Tmsg, class Tdata> class RosPublisherData : public RosData
 private:
     typename rclcpp::Publisher<Tmsg>::SharedPtr publisher; ///< Publisher
     std::function<Tmsg(const Tdata &)> msg_function;       ///< Function to convert data to message
+    Tdata data;                                            ///< Last published data
 
 public:
     /**
@@ -43,12 +41,19 @@ public:
      *
      * @param data Data to publish.
      */
-    void publish(const Tdata &data) const
+    void publish(const Tdata &data_to_publish)
     {
+        data = data_to_publish;
         auto msg = msg_function(data);
         publisher->publish(msg);
     }
+
+    /**
+     * Gets last published data.
+     *
+     * @return Last published data.
+     */
+    Tdata getData() { return data; }
 };
 
 } // namespace gui_node
-#endif // GUI_NODE_ROS_DATA_ROS_PUBLISHER_DATA_HPP
