@@ -46,7 +46,7 @@ void GuiNode::addWidget(const std::string &widget_name, std::shared_ptr<Widget> 
 
 void GuiNode::prepareWidgets(const std::string &application_name)
 {
-    gui_engine = std::make_unique<GuiEngine>(application_name, shared_from_this());
+    gui_engine = std::make_shared<GuiEngine>(application_name, shared_from_this());
     gui_engine->init();
     timer = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&GuiNode::render, this));
 }
