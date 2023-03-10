@@ -11,8 +11,10 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
+find_package(OpenCV REQUIRED)
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -115,12 +117,38 @@ rclcpp_components_register_nodes(gui_node_sample_rosout "gui_node::RosoutSubscri
 set(node_plugins "${gui_node_sample_rosout}gui_node::RosoutSubscriberNode;$<TARGET_FILE:rosout_subscriber_node>\n")
 
 #######################
+# Video publisher node
+#######################
+add_library(gui_node_sample_video_publish SHARED
+    src/samples/video_publisher_node.cpp
+    src/gui_node.cpp
+    src/gui_engine.cpp
+    ${IMGUI_SOURCES}
+)
+
+target_link_libraries(gui_node_sample_video_publish
+    glfw
+    Vulkan::Vulkan
+    ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(gui_node_sample_video_publish
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+)
+
+rclcpp_components_register_nodes(gui_node_sample_video_publish "gui_node::VideoPublisher")
+set(node_plugins "${gui_node_sample_rosout}gui_node::VideoPublisher;$<TARGET_FILE:video_publisher_node>\n")
+
+#######################
 # Install
 #######################
 install(TARGETS
     gui_node_sample_publisher
     gui_node_sample_subscriber
     gui_node_sample_rosout
+    gui_node_sample_video_publish
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
