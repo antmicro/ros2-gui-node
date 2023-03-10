@@ -44,6 +44,16 @@ bool GuiEngine::checkValidationLayerSupport()
     return true;
 }
 
+void VkDebugUtilsMessengerEXTDeleter::operator()(VkDebugUtilsMessengerEXT *messenger) const
+{
+    PFN_vkDestroyDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+    if (func)
+    {
+        func(instance, *messenger, nullptr);
+    }
+}
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                     VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
@@ -116,8 +126,7 @@ void GuiEngine::createInstance()
         create_info.pNext = nullptr;
     }
 
-    std::function<void(VkInstance *)> deleter = [](VkInstance *instance) { vkDestroyInstance(*instance, nullptr); };
-    instance = std::unique_ptr<VkInstance, std::function<void(VkInstance *)>>(new VkInstance, deleter);
+    instance = VkInstanceUniquePtr(new VkInstance);
     if (vkCreateInstance(&create_info, nullptr, instance.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create instance");
@@ -133,25 +142,14 @@ void GuiEngine::setupDebugMessenger()
     }
     VkDebugUtilsMessengerCreateInfoEXT create_info;
 
-    std::function<void(VkDebugUtilsMessengerEXT *)> deleter = [this](VkDebugUtilsMessengerEXT *messenger)
-    {
-        PFN_vkDestroyDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-            vkGetInstanceProcAddr(getInstance(), "vkDestroyDebugUtilsMessengerEXT"));
-        if (func != nullptr)
-        {
-            func(getInstance(), *messenger, nullptr);
-        }
-    };
-
-    debug_messenger = std::unique_ptr<VkDebugUtilsMessengerEXT, std::function<void(VkDebugUtilsMessengerEXT *)>>(
-        new VkDebugUtilsMessengerEXT, deleter);
+    debug_messenger = VkDebugUtilsMessengerEXTUniquePtr(new VkDebugUtilsMessengerEXT, {getInstance()});
 
     populateDebugMessengerCreateInfo(create_info);
 
     PFN_vkCreateDebugUtilsMessengerEXT func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
         vkGetInstanceProcAddr(getInstance(), "vkCreateDebugUtilsMessengerEXT"));
 
-    if (func != nullptr)
+    if (func)
     {
         if (func(getInstance(), &create_info, nullptr, debug_messenger.get()) != VK_SUCCESS)
         {
@@ -168,9 +166,7 @@ void GuiEngine::setupDebugMessenger()
 
 void GuiEngine::createSurface()
 {
-    std::function<void(VkSurfaceKHR *)> deleter = [this](VkSurfaceKHR *surface)
-    { vkDestroySurfaceKHR(getInstance(), *surface, nullptr); };
-    surface = std::unique_ptr<VkSurfaceKHR, std::function<void(VkSurfaceKHR *)>>(new VkSurfaceKHR, deleter);
+    surface = VkSurfaceKHRUniquePtr(new VkSurfaceKHR, {getInstance()});
     if (glfwCreateWindowSurface(getInstance(), getWindow(), nullptr, surface.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create window surface");
@@ -232,12 +228,11 @@ void GuiEngine::createLogicalDevice()
     create_info.pEnabledFeatures = &device_features;
 
     create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
-    create_info.ppEnabledExtensionNames = device_extensions.data();
+    create_info.ppEnabledExtensionNames = reinterpret_cast<const char *const *>(device_extensions.data());
 
     create_info.enabledLayerCount = 0;
 
-    std::function<void(VkDevice *)> deleter = [](VkDevice *device) { vkDestroyDevice(*device, nullptr); };
-    device = std::unique_ptr<VkDevice, std::function<void(VkDevice *)>>(new VkDevice, deleter);
+    device = VkDeviceUniquePtr(new VkDevice);
     if (vkCreateDevice(getPhysicalDevice(), &create_info, nullptr, device.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create logical device");
@@ -296,9 +291,7 @@ void GuiEngine::createSwapChain()
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = VK_NULL_HANDLE;
 
-    std::function<void(VkSwapchainKHR *)> deleter = [this](VkSwapchainKHR *swap_chain)
-    { vkDestroySwapchainKHR(getDevice(), *swap_chain, nullptr); };
-    swap_chain = std::unique_ptr<VkSwapchainKHR, std::function<void(VkSwapchainKHR *)>>(new VkSwapchainKHR, deleter);
+    swap_chain = VkSwapchainKHRUniquePtr(new VkSwapchainKHR, {getDevice()});
     if (vkCreateSwapchainKHR(getDevice(), &create_info, nullptr, swap_chain.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create swap chain");
@@ -331,15 +324,11 @@ void GuiEngine::createImageViews()
     create_info.subresourceRange.baseArrayLayer = 0;
     create_info.subresourceRange.layerCount = 1;
 
-    std::function<void(VkImageView *)> deleter = [this](VkImageView *image_view)
-    { vkDestroyImageView(getDevice(), *image_view, nullptr); };
-
     for (size_t i = 0; i < swap_chain_images.size(); i++)
     {
         create_info.image = swap_chain_images[i];
 
-        swap_chain_image_views[i] =
-            std::unique_ptr<VkImageView, std::function<void(VkImageView *)>>(new VkImageView, deleter);
+        swap_chain_image_views[i] = VkImageViewUniquePtr(new VkImageView, {getDevice()});
         if (vkCreateImageView(getDevice(), &create_info, nullptr, swap_chain_image_views[i].get()) != VK_SUCCESS)
         {
             RCLCPP_FATAL(node->get_logger(), "Failed to create image views");
@@ -386,9 +375,7 @@ void GuiEngine::createRenderPass()
     render_pass_info.dependencyCount = 1;
     render_pass_info.pDependencies = &dependency;
 
-    std::function<void(VkRenderPass *)> deleter = [this](VkRenderPass *render_pass)
-    { vkDestroyRenderPass(getDevice(), *render_pass, nullptr); };
-    render_pass = std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass *)>>(new VkRenderPass, deleter);
+    render_pass = VkRenderPassUniquePtr(new VkRenderPass, {getDevice()});
     if (vkCreateRenderPass(getDevice(), &render_pass_info, nullptr, render_pass.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create render pass");
@@ -408,13 +395,9 @@ void GuiEngine::createFramebuffers()
     framebuffer_info.height = swap_chain_extent.height;
     framebuffer_info.layers = 1;
 
-    std::function<void(VkFramebuffer *)> deleter = [this](VkFramebuffer *framebuffer)
-    { vkDestroyFramebuffer(getDevice(), *framebuffer, nullptr); };
-
     for (size_t i = 0; i < swap_chain_image_views.size(); i++)
     {
-        swap_chain_framebuffers[i] =
-            std::unique_ptr<VkFramebuffer, std::function<void(VkFramebuffer *)>>(new VkFramebuffer, deleter);
+        swap_chain_framebuffers[i] = VkFramebufferUniquePtr(new VkFramebuffer, {getDevice()});
         framebuffer_info.pAttachments = swap_chain_image_views[i].get();
         if (vkCreateFramebuffer(getDevice(), &framebuffer_info, nullptr, swap_chain_framebuffers[i].get()) !=
             VK_SUCCESS)
@@ -433,9 +416,7 @@ void GuiEngine::createCommandPool()
     pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     pool_info.queueFamilyIndex = indices.graphics_family.value();
 
-    std::function<void(VkCommandPool *)> deleter = [this](VkCommandPool *command_pool)
-    { vkDestroyCommandPool(getDevice(), *command_pool, nullptr); };
-    command_pool = std::unique_ptr<VkCommandPool, std::function<void(VkCommandPool *)>>(new VkCommandPool, deleter);
+    command_pool = VkCommandPoolUniquePtr(new VkCommandPool, {getDevice()});
     if (vkCreateCommandPool(getDevice(), &pool_info, nullptr, command_pool.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create command pool");
@@ -465,10 +446,7 @@ void GuiEngine::createDescriptorPool()
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
 
-    std::function<void(VkDescriptorPool *)> deleter = [this](VkDescriptorPool *pool)
-    { vkDestroyDescriptorPool(getDevice(), *pool, nullptr); };
-    descriptor_pool =
-        std::unique_ptr<VkDescriptorPool, std::function<void(VkDescriptorPool *)>>(new VkDescriptorPool, deleter);
+    descriptor_pool = VkDescriptorPoolUniquePtr(new VkDescriptorPool, {getDevice()});
     if (vkCreateDescriptorPool(getDevice(), &pool_info, nullptr, descriptor_pool.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create descriptor pool");
@@ -506,17 +484,11 @@ void GuiEngine::createSyncObjects()
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    std::function<void(VkSemaphore *)> semaphore_deleter = [this](VkSemaphore *semaphore)
-    { vkDestroySemaphore(getDevice(), *semaphore, nullptr); };
-    std::function<void(VkFence *)> fence_deleter = [this](VkFence *fence)
-    { vkDestroyFence(getDevice(), *fence, nullptr); };
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        image_available_semaphores[i] =
-            std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>(new VkSemaphore, semaphore_deleter);
-        render_finished_semaphores[i] =
-            std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>(new VkSemaphore, semaphore_deleter);
-        in_flight_fences[i] = std::unique_ptr<VkFence, std::function<void(VkFence *)>>(new VkFence, fence_deleter);
+        image_available_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {getDevice()});
+        render_finished_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {getDevice()});
+        in_flight_fences[i] = VkFenceUniquePtr(new VkFence, {getDevice()});
         if (vkCreateSemaphore(getDevice(), &semaphore_info, nullptr, image_available_semaphores[i].get()) !=
                 VK_SUCCESS ||
             vkCreateSemaphore(getDevice(), &semaphore_info, nullptr, render_finished_semaphores[i].get()) !=
@@ -531,6 +503,12 @@ void GuiEngine::createSyncObjects()
 
 VkSurfaceFormatKHR GuiEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &available_formats)
 {
+    if (available_formats.empty())
+    {
+        RCLCPP_FATAL(node->get_logger(), "No available surface formats");
+        throw std::runtime_error("No available surface formats");
+    }
+
     auto it = std::find_if(available_formats.begin(), available_formats.end(),
                            [](const VkSurfaceFormatKHR &format) {
                                return format.format == VK_FORMAT_B8G8R8A8_SRGB &&
@@ -815,17 +793,17 @@ void GuiEngine::framebufferResizeCallback(GLFWwindow *window, __attribute__((unu
     app->framebuffer_resized = true;
 }
 
-void GuiEngine::initGlfw()
+void GLFWwindowDeleter::operator()(GLFWwindow *window) const
+{
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
+
+void GuiEngine::initGLFW()
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    std::function<void(GLFWwindow *)> deleter = [](GLFWwindow *window)
-    {
-        glfwDestroyWindow(window);
-        glfwTerminate();
-    };
-    window = std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow *)>>(
-        glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr), deleter);
+    window = GLFWwindowUniquePtr(glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr));
     glfwSetWindowUserPointer(getWindow(), this);
     glfwSetFramebufferSizeCallback(getWindow(), framebufferResizeCallback);
 }
@@ -849,10 +827,10 @@ void GuiEngine::initVulkan()
 
 void GuiEngine::init()
 {
-    initGlfw();
+    initGLFW();
     initVulkan();
     imgui_engine->init(shared_from_this());
-    for (std::pair<std::string, std::shared_ptr<TextureLoader>> texture : textures)
+    for (const auto &texture : textures)
     {
         texture.second->init();
     }
@@ -887,19 +865,19 @@ void GuiEngine::cleanup()
 }
 
 GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node)
-    : application_name(application_name), node(node), imgui_engine(std::make_unique<ImGuiEngine>()),
-      device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME})
+    : application_name(application_name), device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME}), node(node),
+      imgui_engine(std::make_unique<ImGuiEngine>())
 {
 }
 
 GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
-                     const std::vector<const char *> &device_extensions)
-    : application_name(application_name), node(node), imgui_engine(std::make_unique<ImGuiEngine>()),
-      device_extensions(device_extensions)
+                     const std::vector<std::string> &device_extensions)
+    : application_name(application_name), device_extensions(device_extensions), node(node),
+      imgui_engine(std::make_unique<ImGuiEngine>())
 {
 }
 
-bool GuiEngine::addTexture(const std::string &name, std::shared_ptr<unsigned char *> data, int width, int height,
+bool GuiEngine::addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height,
                            int channels)
 {
     if (initialized)
@@ -912,7 +890,7 @@ bool GuiEngine::addTexture(const std::string &name, std::shared_ptr<unsigned cha
         RCLCPP_WARN(node->get_logger(), "Texture %s already exists!", name.c_str());
         return false;
     }
-    textures.emplace(name, std::make_shared<TextureLoader>(shared_from_this(), data, width, height, channels));
+    textures.emplace(name, std::make_shared<TextureLoader>(shared_from_this(), image_data, width, height, channels));
     return true;
 }
 
@@ -984,9 +962,9 @@ ImGuiEngine::~ImGuiEngine()
     ImGui::DestroyContext();
 }
 
-TextureLoader::TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<unsigned char *> image_data,
-                             int width, int height, int channels)
-    : gui_engine(gui_engine), channels(channels), height(height), width(width), image_data(image_data)
+TextureLoader::TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::vector<unsigned char> image_data, int width,
+                             int height, int channels)
+    : channels(channels), height(height), width(width), gui_engine(gui_engine), image_data(image_data)
 {
 }
 
@@ -1035,9 +1013,7 @@ void TextureLoader::createImage()
     image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    std::function<void(VkImage *)> image_deleter = [this](VkImage *image)
-    { vkDestroyImage(gui_engine->getDevice(), *image, nullptr); };
-    image = std::unique_ptr<VkImage, std::function<void(VkImage *)>>(new VkImage, image_deleter);
+    image = VkImageUniquePtr(new VkImage, {gui_engine->getDevice()});
     if (vkCreateImage(gui_engine->getDevice(), &image_info, nullptr, image.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create image!");
@@ -1051,10 +1027,8 @@ void TextureLoader::createImage()
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.allocationSize = mem_requirements.size;
     alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    std::function<void(VkDeviceMemory *)> memory_deleter = [this](VkDeviceMemory *memory)
-    { vkFreeMemory(gui_engine->getDevice(), *memory, nullptr); };
-    image_memory =
-        std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>>(new VkDeviceMemory, memory_deleter);
+
+    image_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, {gui_engine->getDevice()});
     if (vkAllocateMemory(gui_engine->getDevice(), &alloc_info, nullptr, image_memory.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate image memory!");
@@ -1075,9 +1049,7 @@ void TextureLoader::createImageView()
     view_info.subresourceRange.baseMipLevel = 0;
     view_info.subresourceRange.levelCount = 1;
     view_info.subresourceRange.layerCount = 1;
-    std::function<void(VkImageView *)> deleter = [this](VkImageView *image_view)
-    { vkDestroyImageView(gui_engine->getDevice(), *image_view, nullptr); };
-    image_view = std::unique_ptr<VkImageView, std::function<void(VkImageView *)>>(new VkImageView, deleter);
+    image_view = VkImageViewUniquePtr(new VkImageView, {gui_engine->getDevice()});
     if (vkCreateImageView(gui_engine->getDevice(), &view_info, nullptr, image_view.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture image view!");
@@ -1098,9 +1070,7 @@ void TextureLoader::createSampler()
     sampler_info.minLod = -1000;
     sampler_info.maxLod = 1000;
     sampler_info.maxAnisotropy = 1.0f;
-    std::function<void(VkSampler *)> deleter = [this](VkSampler *sampler)
-    { vkDestroySampler(gui_engine->getDevice(), *sampler, nullptr); };
-    sampler = std::unique_ptr<VkSampler, std::function<void(VkSampler *)>>(new VkSampler, deleter);
+    sampler = VkSamplerUniquePtr(new VkSampler, {gui_engine->getDevice()});
     if (vkCreateSampler(gui_engine->getDevice(), &sampler_info, nullptr, sampler.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture sampler!");
@@ -1117,9 +1087,7 @@ void TextureLoader::createUploadBuffer()
     buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    std::function<void(VkBuffer *)> upload_buffer_deleter = [this](VkBuffer *buffer)
-    { vkDestroyBuffer(gui_engine->getDevice(), *buffer, nullptr); };
-    upload_buffer = std::unique_ptr<VkBuffer, std::function<void(VkBuffer *)>>(new VkBuffer, upload_buffer_deleter);
+    upload_buffer = VkBufferUniquePtr(new VkBuffer, {gui_engine->getDevice()});
     if (vkCreateBuffer(gui_engine->getDevice(), &buffer_info, nullptr, upload_buffer.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create buffer!");
@@ -1134,10 +1102,7 @@ void TextureLoader::createUploadBuffer()
     alloc_info.allocationSize = mem_requirements.size;
     alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-    std::function<void(VkDeviceMemory *)> upload_buffer_memory_deleter = [this](VkDeviceMemory *memory)
-    { vkFreeMemory(gui_engine->getDevice(), *memory, nullptr); };
-    upload_buffer_memory = std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>>(
-        new VkDeviceMemory, upload_buffer_memory_deleter);
+    upload_buffer_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, {gui_engine->getDevice()});
     if (vkAllocateMemory(gui_engine->getDevice(), &alloc_info, nullptr, upload_buffer_memory.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate buffer memory!");
@@ -1161,7 +1126,7 @@ void TextureLoader::uploadToBuffer()
         throw std::runtime_error("Failed to map memory!");
     }
 
-    memcpy(map, image_data.get(), image_size);
+    memcpy(map, image_data.data(), image_size);
     VkMappedMemoryRange range = {};
     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range.memory = *upload_buffer_memory.get();

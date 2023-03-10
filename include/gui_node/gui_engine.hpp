@@ -13,24 +13,106 @@
 
 #include "gui_node/gui_node.hpp"
 
+#define VK_DECLARE_TYPE(obj)                                                                                           \
+    struct Vk##obj##Deleter                                                                                            \
+    {                                                                                                                  \
+        void operator()(Vk##obj *obj) const { vkDestroy##obj(*obj, nullptr); };                                        \
+    };                                                                                                                 \
+    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;
+
+#define VK_DECLARE_TYPE_WITH_PARENT(obj, parent)                                                                       \
+    struct Vk##obj##Deleter                                                                                            \
+    {                                                                                                                  \
+        Vk##parent parent;                                                                                             \
+        void operator()(Vk##obj *obj) const { vkDestroy##obj(parent, *obj, nullptr); };                                \
+    };                                                                                                                 \
+    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;
+
 namespace gui_node
 {
 
+VK_DECLARE_TYPE(Instance)                           ///< Define a unique pointer for a VkInstance
+VK_DECLARE_TYPE(Device)                             ///< Define a unique pointer for a VkDevice
+VK_DECLARE_TYPE_WITH_PARENT(Buffer, Device)         ///< Define a unique pointer for a VkBuffer
+VK_DECLARE_TYPE_WITH_PARENT(CommandPool, Device)    ///< Define a unique pointer for a VkCommandPool
+VK_DECLARE_TYPE_WITH_PARENT(DescriptorPool, Device) ///< Define a unique pointer for a VkDescriptorPool
+VK_DECLARE_TYPE_WITH_PARENT(Fence, Device)          ///< Define a unique pointer for a VkFence
+VK_DECLARE_TYPE_WITH_PARENT(Framebuffer, Device)    ///< Define a unique pointer for a VkFramebuffer
+VK_DECLARE_TYPE_WITH_PARENT(Image, Device)          ///< Define a unique pointer for a VkImage
+VK_DECLARE_TYPE_WITH_PARENT(ImageView, Device)      ///< Define a unique pointer for a VkImageView
+VK_DECLARE_TYPE_WITH_PARENT(RenderPass, Device)     ///< Define a unique pointer for a VkRenderPass
+VK_DECLARE_TYPE_WITH_PARENT(Sampler, Device)        ///< Define a unique pointer for a VkSampler
+VK_DECLARE_TYPE_WITH_PARENT(Semaphore, Device)      ///< Define a unique pointer for a VkSemaphore
+VK_DECLARE_TYPE_WITH_PARENT(SurfaceKHR, Instance)   ///< Define a unique pointer for a VkSurfaceKHR
+VK_DECLARE_TYPE_WITH_PARENT(SwapchainKHR, Device)   ///< Define a unique pointer for a VkSwapchainKHR
+
 class GuiEngine; ///< Forward declaration
+
+/**
+ * A structure for deleting a Vulkan debug messenger.
+ */
+struct VkDebugUtilsMessengerEXTDeleter
+{
+    /**
+     * Deletes the messenger.
+     *
+     * @param debug_utils_messenger Pointer to the messenger.
+     */
+    void operator()(VkDebugUtilsMessengerEXT *debug_utils_messenger) const;
+
+    VkInstance instance; ///< Vulkan instance the messenger belongs to
+};
+
+/// Unique pointer to a Vulkan debug messenger
+using VkDebugUtilsMessengerEXTUniquePtr = std::unique_ptr<VkDebugUtilsMessengerEXT, VkDebugUtilsMessengerEXTDeleter>;
+
+/**
+ * A structure for deleting a GLFW window.
+ */
+struct GLFWwindowDeleter
+{
+    /**
+     * Deletes the window and terminates glfw.
+     *
+     * @param window Pointer to the window.
+     */
+    void operator()(GLFWwindow *window) const;
+};
+
+/// A unique pointer to a GLFW window
+using GLFWwindowUniquePtr = std::unique_ptr<GLFWwindow, GLFWwindowDeleter>;
+
+/**
+ * A structure for deleting the Vulkan memory.
+ */
+struct VkDeviceMemoryDeleter
+{
+    /**
+     * Frees the allocated memory.
+     *
+     * @param memory Pointer to the memory to be freed.
+     */
+    void operator()(VkDeviceMemory *memory) const { vkFreeMemory(device, *memory, nullptr); };
+
+    VkDevice device; ///< Device to which the memory belongs.
+};
+
+/// A unique pointer to the Vulkan memory
+using VkDeviceMemoryUniquePtr = std::unique_ptr<VkDeviceMemory, VkDeviceMemoryDeleter>;
 
 /**
  * Stores indices of queue families.
  */
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t> graphics_family; ///< Index of graphics queue family.
-    std::optional<uint32_t> present_family;  ///< Index of present queue family.
-
     /**
      * Checks if all queue families are present.
      * @return True if all queue families are present, false otherwise.
      */
     bool isComplete() { return graphics_family.has_value() && present_family.has_value(); }
+
+    std::optional<uint32_t> graphics_family; ///< Index of graphics queue family.
+    std::optional<uint32_t> present_family;  ///< Index of present queue family.
 };
 
 /**
@@ -90,21 +172,6 @@ public:
 class TextureLoader
 {
 private:
-    std::unique_ptr<VkBuffer, std::function<void(VkBuffer *)>> upload_buffer; ///< Buffer for uploading data to the GPU
-    std::unique_ptr<VkSampler, std::function<void(VkSampler *)>> sampler;     ///< Sampler for the textures
-    std::unique_ptr<VkImageView, std::function<void(VkImageView *)>> image_view; ///< Image view for the textures
-    std::unique_ptr<VkImage, std::function<void(VkImage *)>> image;              ///< Image for the textures
-    std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>> image_memory; ///< Memory for the textures
-    std::shared_ptr<GuiEngine> gui_engine;                                               ///< Pointer to the GUI engine.
-    VkDescriptorSet descriptor_set;              ///< Descriptor set for the textures
-    int channels;                                ///< Number of channels in the textures
-    int height;                                  ///< Height of the textures
-    int width;                                   ///< Width of the textures
-    std::shared_ptr<unsigned char *> image_data; ///< Data of the textures
-
-    /// Memory for the upload buffer
-    std::unique_ptr<VkDeviceMemory, std::function<void(VkDeviceMemory *)>> upload_buffer_memory;
-
     /**
      * Finds a memory type that has the requested properties.
      *
@@ -161,18 +228,31 @@ private:
      */
     void recordCommandBuffer(const VkCommandPool &command_pool, const VkQueue &graphics_queue);
 
+    int channels;                                 ///< Number of channels in the textures
+    int height;                                   ///< Height of the textures
+    int width;                                    ///< Width of the textures
+    std::shared_ptr<GuiEngine> gui_engine;        ///< Pointer to the GUI engine.
+    std::vector<unsigned char> image_data;        ///< Data of the textures
+    VkBufferUniquePtr upload_buffer;              ///< Buffer for uploading data to the GPU
+    VkDescriptorSet descriptor_set;               ///< Descriptor set for the textures
+    VkDeviceMemoryUniquePtr image_memory;         ///< Memory for the textures
+    VkDeviceMemoryUniquePtr upload_buffer_memory; ///< Memory for the upload buffer
+    VkImageUniquePtr image;                       ///< Image for the textures
+    VkImageViewUniquePtr image_view;              ///< Image view for the textures
+    VkSamplerUniquePtr sampler;                   ///< Sampler for the textures
+
 public:
     /**
      * Creates a texture loader.
      *
      * @param gui_engine Pointer to the GUI engine.
-     * @param image_data Pointer to the image data.
+     * @param image_data Vector of the image data.
      * @param width Width of the image.
      * @param height Height of the image.
      * @param channels Number of channels in the image.
      */
-    TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<unsigned char *> image_data, int width,
-                  int height, int channels);
+    TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::vector<unsigned char> image_data, int width, int height,
+                  int channels);
 
     /**
      * Destroys the texture loader and frees all resources.
@@ -208,62 +288,6 @@ public:
 
 class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 {
-    VkExtent2D swap_chain_extent;                      ///< Swap chain extent
-    VkFormat swap_chain_image_format;                  ///< Swap chain image format
-    VkQueue graphics_queue;                            ///< Graphics queue
-    VkQueue present_queue;                             ///< Queue for presenting images to the screen
-    bool framebuffer_resized = false;                  ///< Flag for when the framebuffer is resized
-    bool initialized = false;                          ///< Flag for when the GUI engine is initialized
-    const int MAX_FRAMES_IN_FLIGHT = 2;                ///< Maximum number of frames in flight
-    const std::string application_name;                ///< Name of the application
-    std::shared_ptr<GuiNode> node;                     ///< The ROS2 node for the GUI
-    std::unique_ptr<ImGuiEngine> imgui_engine;         ///< ImGui engine
-    std::unique_ptr<VkPhysicalDevice> physical_device; ///< Physical device (GPU) that Vulkan will be using
-    std::vector<VkCommandBuffer> command_buffers;      ///< Command buffers
-    std::vector<VkImage> swap_chain_images;            ///< Swap chain images
-    std::vector<const char *> device_extensions;       ///< Device extensions required for the application
-    uint32_t current_frame = 0;                        ///< Current frame
-
-    std::unique_ptr<GLFWwindow, std::function<void(GLFWwindow *)>> window;      ///< GLFW Window
-    std::unique_ptr<VkDevice, std::function<void(VkDevice *)>> device;          ///< Vulkan logical device
-    std::unique_ptr<VkInstance, std::function<void(VkInstance *)>> instance;    ///< Vulkan instance
-    std::unordered_map<std::string, std::shared_ptr<TextureLoader>> textures;   ///< Textures loaded by the application
-    std::unique_ptr<VkSurfaceKHR, std::function<void(VkSurfaceKHR *)>> surface; ///< Surface for rendering
-    std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass *)>> render_pass;    ///< Render pass
-    std::unique_ptr<VkCommandPool, std::function<void(VkCommandPool *)>> command_pool; ///< Command pool
-
-    /// Descriptor pool for ImGui
-    std::unique_ptr<VkDescriptorPool, std::function<void(VkDescriptorPool *)>> descriptor_pool;
-
-    /// Swapchain for presenting images to the screen
-    std::unique_ptr<VkSwapchainKHR, std::function<void(VkSwapchainKHR *)>> swap_chain;
-
-    /// Swapchain images views
-    std::vector<std::unique_ptr<VkImageView, std::function<void(VkImageView *)>>> swap_chain_image_views;
-
-    /// Framebuffers for the swap chain images
-    std::vector<std::unique_ptr<VkFramebuffer, std::function<void(VkFramebuffer *)>>> swap_chain_framebuffers;
-
-    /// Semaphore for when an image is available
-    std::vector<std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>> image_available_semaphores;
-
-    /// Semaphore for when rendering is finished
-    std::vector<std::unique_ptr<VkSemaphore, std::function<void(VkSemaphore *)>>> render_finished_semaphores;
-
-    /// Fences for in flight frames
-    std::vector<std::unique_ptr<VkFence, std::function<void(VkFence *)>>> in_flight_fences;
-
-    /// Debug messenger
-    std::unique_ptr<VkDebugUtilsMessengerEXT, std::function<void(VkDebugUtilsMessengerEXT *)>> debug_messenger;
-
-#ifdef NDEBUG
-    const bool enable_validation_layers = false; ///< Disable validation layers
-#else
-    const bool enable_validation_layers = true; ///< Enable validation layers
-#endif
-
-    const std::vector<const char *> validation_layers = {"VK_LAYER_KHRONOS_validation"}; ///< Validation layers to use
-
     /**
      * Checks if the required validation layers are available and supported by the GPU.
      *
@@ -318,6 +342,8 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
      *
      * @param availableFormats The available surface formats.
      * @return The surface format for the swap chain that best matches the requirements, else a default format.
+     *
+     * @throws std::runtime_error If no suitable format is found.
      */
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &available_formats);
 
@@ -361,14 +387,14 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     void recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t image_index);
 
     /**
-     * Creates a vulkan instance with GLFW extensions.
+     * Creates a Vulkan instance with GLFW extensions.
      *
      * @throws std::runtime_error if the instance could not be created
      */
     void createInstance();
 
     /**
-     * Creates a vulkan surface for the window
+     * Creates a Vulkan surface for the window
      *
      * @throws std::runtime_error if the surface could not be created
      */
@@ -382,7 +408,7 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     void createLogicalDevice();
 
     /**
-     * Chooses the best physical device for the previously initialized vulkan instance.
+     * Chooses the best physical device for the previously initialized Vulkan instance.
      *
      * @throws std::runtime_error if no devices are available or no suitable device was found.
      */
@@ -456,7 +482,7 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     /**
      * Initializes GLFW backend
      */
-    void initGlfw();
+    void initGLFW();
 
     /**
      * Initializes Vulkan backend
@@ -472,6 +498,50 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
      * Cleans up allocated swap chain along with its resources.
      */
     void cleanupSwapChain();
+
+    bool framebuffer_resized = false;           ///< Flag for when the framebuffer is resized
+    bool initialized = false;                   ///< Flag for when the GUI engine is initialized
+    const int MAX_FRAMES_IN_FLIGHT = 2;         ///< Maximum number of frames in flight
+    const std::string application_name;         ///< Name of the application
+    uint32_t current_frame = 0;                 ///< Current frame
+    std::vector<std::string> device_extensions; ///< Device extensions required for the application
+    std::shared_ptr<GuiNode> node;              ///< The ROS2 node for the GUI
+
+    GLFWwindowUniquePtr window; ///< GLFW Window
+
+    VkCommandPoolUniquePtr command_pool;               ///< Command pool
+    VkDebugUtilsMessengerEXTUniquePtr debug_messenger; ///< Debug messenger
+    VkDescriptorPoolUniquePtr descriptor_pool;         ///< Descriptor pool for ImGui
+    VkDeviceUniquePtr device;                          ///< Vulkan logical device
+    VkExtent2D swap_chain_extent;                      ///< Swap chain extent
+    VkFormat swap_chain_image_format;                  ///< Swap chain image format
+    VkInstanceUniquePtr instance;                      ///< Vulkan instance
+    VkQueue graphics_queue;                            ///< Graphics queue
+    VkQueue present_queue;                             ///< Queue for presenting images to the screen
+    VkRenderPassUniquePtr render_pass;                 ///< Render pass
+    VkSurfaceKHRUniquePtr surface;                     ///< Surface for rendering
+    VkSwapchainKHRUniquePtr swap_chain;                ///< Swapchain for presenting images to the screen
+
+    std::unique_ptr<ImGuiEngine> imgui_engine;                    ///< ImGui engine
+    std::unique_ptr<VkPhysicalDevice> physical_device;            ///< Physical device (GPU) that Vulkan will be using
+    std::vector<VkCommandBuffer> command_buffers;                 ///< Command buffers
+    std::vector<VkFenceUniquePtr> in_flight_fences;               ///< Fences for in flight frames
+    std::vector<VkFramebufferUniquePtr> swap_chain_framebuffers;  ///< Framebuffers for the swap chain images
+    std::vector<VkImage> swap_chain_images;                       ///< Swap chain images
+    std::vector<VkImageViewUniquePtr> swap_chain_image_views;     ///< Swapchain images views
+    std::vector<VkSemaphoreUniquePtr> image_available_semaphores; ///< Semaphore for when an image is available
+    std::vector<VkSemaphoreUniquePtr> render_finished_semaphores; ///< Semaphore for when rendering is finished
+
+    /// Textures loaded by the application
+    std::unordered_map<std::string, std::shared_ptr<TextureLoader>> textures;
+
+#ifdef NDEBUG
+    const bool enable_validation_layers = false; ///< Disable validation layers
+#else
+    const bool enable_validation_layers = true; ///< Enable validation layers
+#endif
+
+    const std::vector<const char *> validation_layers = {"VK_LAYER_KHRONOS_validation"}; ///< Validation layers to use
 
 public:
     /**
@@ -490,7 +560,7 @@ public:
      * @param device_extensions Vector of required extensions for physical device.
      */
     GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
-              const std::vector<const char *> &device_extensions);
+              const std::vector<std::string> &device_extensions);
 
     /**
      * Destroy the GuiEngine object.
@@ -515,13 +585,13 @@ public:
      * Adds a new texture object to the GUI.
      *
      * @param name The name of the texture.
-     * @param data The data of the texture.
+     * @param image_data The data of the texture.
      * @param width The width of the texture.
      * @param height The height of the texture.
      * @param channels The number of channels of the texture.
      * @return True if the texture was successfully added, false otherwise.
      */
-    bool addTexture(const std::string &name, std::shared_ptr<unsigned char *> data, int width, int height,
+    bool addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height,
                     int channels);
 
     /**
