@@ -32,4 +32,18 @@ def generate_launch_description():
         output='both',
     )
 
-    return launch.LaunchDescription([topic_publisher, gui_topic_subscriber])
+    rosout_topic_subscriber = ComposableNodeContainer(
+        name='rosout_subscriber_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='gui_node',
+                plugin='gui_node::RosoutSubscriberNode',
+                name='rosout_subscriber')
+        ],
+        output='both',
+    )
+
+    return launch.LaunchDescription([topic_publisher, gui_topic_subscriber, rosout_topic_subscriber])

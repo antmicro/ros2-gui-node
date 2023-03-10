@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
@@ -89,11 +90,37 @@ ament_target_dependencies(gui_node_sample_subscriber
 rclcpp_components_register_nodes(gui_node_sample_subscriber "gui_node::TimeSubscriber")
 
 #######################
+# Rosout node
+#######################
+add_library(gui_node_sample_rosout SHARED
+    src/samples/rosout_subscriber_node.cpp
+    src/gui_node.cpp
+    src/gui_engine.cpp
+    src/widget/widget_rosout.cpp
+    ${IMGUI_SOURCES}
+)
+
+target_link_libraries(gui_node_sample_rosout
+    glfw
+    Vulkan::Vulkan
+)
+
+ament_target_dependencies(gui_node_sample_rosout
+    rclcpp
+    rclcpp_components
+    rcl_interfaces
+)
+
+rclcpp_components_register_nodes(gui_node_sample_rosout "gui_node::RosoutSubscriberNode")
+set(node_plugins "${gui_node_sample_rosout}gui_node::RosoutSubscriberNode;$<TARGET_FILE:rosout_subscriber_node>\n")
+
+#######################
 # Install
 #######################
 install(TARGETS
     gui_node_sample_publisher
     gui_node_sample_subscriber
+    gui_node_sample_rosout
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
