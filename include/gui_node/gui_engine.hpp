@@ -24,8 +24,8 @@
 #define VK_DECLARE_TYPE_WITH_PARENT(obj, parent)                                                                       \
     struct Vk##obj##Deleter                                                                                            \
     {                                                                                                                  \
-        Vk##parent parent;                                                                                             \
-        void operator()(Vk##obj *obj) const { vkDestroy##obj(parent, *obj, nullptr); };                                \
+        Vk##parent##SharedPtr parent;                                                                                  \
+        void operator()(Vk##obj *obj) const { vkDestroy##obj(*parent.get(), *obj, nullptr); };                         \
     };                                                                                                                 \
     using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;                                             \
     using Vk##obj##SharedPtr = std::shared_ptr<Vk##obj>;
@@ -105,9 +105,9 @@ struct VkDeviceMemoryDeleter
      *
      * @param memory Pointer to the memory to be freed.
      */
-    void operator()(VkDeviceMemory *memory) const { vkFreeMemory(device, *memory, nullptr); };
+    void operator()(VkDeviceMemory *memory) const { vkFreeMemory(*device.get(), *memory, nullptr); };
 
-    VkDevice device; ///< Device to which the memory belongs.
+    VkDeviceSharedPtr device; ///< Device to which the memory belongs.
 };
 
 /// A unique pointer to the Vulkan memory

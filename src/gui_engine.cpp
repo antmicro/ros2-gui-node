@@ -61,8 +61,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 {
     if (messageType != VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
     {
-        if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT &&
-            messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        if ((messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) &&
+            (messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT))
         {
             RCLCPP_WARN(rclcpp::get_logger("GuiEngine"), "Validation layer: %s", pCallbackData->pMessage);
         }
@@ -166,7 +166,7 @@ void GuiEngine::setupDebugMessenger()
 
 void GuiEngine::createSurface()
 {
-    surface = VkSurfaceKHRUniquePtr(new VkSurfaceKHR, {*getInstance().get()});
+    surface = VkSurfaceKHRUniquePtr(new VkSurfaceKHR, {getInstance()});
     if (glfwCreateWindowSurface(*getInstance().get(), getWindow(), nullptr, surface.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create window surface");
@@ -291,7 +291,7 @@ void GuiEngine::createSwapChain()
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = VK_NULL_HANDLE;
 
-    swap_chain = VkSwapchainKHRUniquePtr(new VkSwapchainKHR, {*getDevice().get()});
+    swap_chain = VkSwapchainKHRUniquePtr(new VkSwapchainKHR, {getDevice()});
     if (vkCreateSwapchainKHR(*getDevice().get(), &create_info, nullptr, swap_chain.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create swap chain");
@@ -328,7 +328,7 @@ void GuiEngine::createImageViews()
     {
         create_info.image = swap_chain_images[i];
 
-        swap_chain_image_views[i] = VkImageViewUniquePtr(new VkImageView, {*getDevice().get()});
+        swap_chain_image_views[i] = VkImageViewUniquePtr(new VkImageView, {getDevice()});
         if (vkCreateImageView(*getDevice().get(), &create_info, nullptr, swap_chain_image_views[i].get()) != VK_SUCCESS)
         {
             RCLCPP_FATAL(node->get_logger(), "Failed to create image views");
@@ -375,7 +375,7 @@ void GuiEngine::createRenderPass()
     render_pass_info.dependencyCount = 1;
     render_pass_info.pDependencies = &dependency;
 
-    render_pass = VkRenderPassSharedPtr(new VkRenderPass, VkRenderPassDeleter{*getDevice().get()});
+    render_pass = VkRenderPassSharedPtr(new VkRenderPass, VkRenderPassDeleter{getDevice()});
     if (vkCreateRenderPass(*getDevice().get(), &render_pass_info, nullptr, getRenderPass().get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create render pass");
@@ -397,7 +397,7 @@ void GuiEngine::createFramebuffers()
 
     for (size_t i = 0; i < swap_chain_image_views.size(); i++)
     {
-        swap_chain_framebuffers[i] = VkFramebufferUniquePtr(new VkFramebuffer, {*getDevice().get()});
+        swap_chain_framebuffers[i] = VkFramebufferUniquePtr(new VkFramebuffer, {getDevice()});
         framebuffer_info.pAttachments = swap_chain_image_views[i].get();
         if (vkCreateFramebuffer(*getDevice().get(), &framebuffer_info, nullptr, swap_chain_framebuffers[i].get()) !=
             VK_SUCCESS)
@@ -416,7 +416,7 @@ void GuiEngine::createCommandPool()
     pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     pool_info.queueFamilyIndex = indices.graphics_family.value();
 
-    command_pool = VkCommandPoolSharedPtr(new VkCommandPool, VkCommandPoolDeleter{*getDevice().get()});
+    command_pool = VkCommandPoolSharedPtr(new VkCommandPool, VkCommandPoolDeleter{getDevice()});
     if (vkCreateCommandPool(*getDevice().get(), &pool_info, nullptr, getCommandPool().get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create command pool");
@@ -446,7 +446,7 @@ void GuiEngine::createDescriptorPool()
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
 
-    descriptor_pool = VkDescriptorPoolSharedPtr(new VkDescriptorPool, VkDescriptorPoolDeleter{*getDevice().get()});
+    descriptor_pool = VkDescriptorPoolSharedPtr(new VkDescriptorPool, VkDescriptorPoolDeleter{getDevice()});
     if (vkCreateDescriptorPool(*getDevice().get(), &pool_info, nullptr, getDescriptorPool().get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to create descriptor pool");
@@ -486,9 +486,9 @@ void GuiEngine::createSyncObjects()
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        image_available_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {*getDevice().get()});
-        render_finished_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {*getDevice().get()});
-        in_flight_fences[i] = VkFenceUniquePtr(new VkFence, {*getDevice().get()});
+        image_available_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {getDevice()});
+        render_finished_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {getDevice()});
+        in_flight_fences[i] = VkFenceUniquePtr(new VkFence, {getDevice()});
         if (vkCreateSemaphore(*getDevice().get(), &semaphore_info, nullptr, image_available_semaphores[i].get()) !=
                 VK_SUCCESS ||
             vkCreateSemaphore(*getDevice().get(), &semaphore_info, nullptr, render_finished_semaphores[i].get()) !=
@@ -575,7 +575,7 @@ QueueFamilyIndices GuiEngine::findQueueFamilies(const VkPhysicalDevice &device)
     int i = 0;
     for (const auto &queue_family : queue_families)
     {
-        if (queue_family.queueCount > 0 && queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if ((queue_family.queueCount > 0) && (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT))
         {
             indices.graphics_family = i;
         }
@@ -583,7 +583,7 @@ QueueFamilyIndices GuiEngine::findQueueFamilies(const VkPhysicalDevice &device)
         VkBool32 present_support = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, *surface.get(), &present_support);
 
-        if (queue_family.queueCount > 0 && present_support)
+        if ((queue_family.queueCount > 0) && present_support)
         {
             indices.present_family = i;
         }
@@ -664,7 +664,7 @@ void GuiEngine::rebuildSwapChain()
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(getWindow(), &width, &height);
-    while (width == 0 || height == 0)
+    while ((width == 0) || (height == 0))
     {
         glfwGetFramebufferSize(getWindow(), &width, &height);
         glfwWaitEvents();
@@ -725,7 +725,7 @@ void GuiEngine::draw()
         rebuildSwapChain();
         return;
     }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    else if ((result != VK_SUCCESS) && (result != VK_SUBOPTIMAL_KHR))
     {
         RCLCPP_FATAL(node->get_logger(), "Failed to acquire swap chain image!");
         throw std::runtime_error("Failed to acquire swap chain image!");
@@ -772,7 +772,7 @@ void GuiEngine::draw()
 
     result = vkQueuePresentKHR(present_queue, &present_info);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized)
+    if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR) || framebuffer_resized)
     {
         framebuffer_resized = false;
         rebuildSwapChain();
@@ -906,7 +906,7 @@ std::shared_ptr<TextureLoader> GuiEngine::getTexture(const std::string &name)
 
 VkCommandBuffer GuiEngine::getCommandBuffer(int index) const
 {
-    if (static_cast<size_t>(index) < 0 || static_cast<size_t>(index) >= command_buffers.size())
+    if ((static_cast<size_t>(index) < 0) || (static_cast<size_t>(index) >= command_buffers.size()))
     {
         RCLCPP_FATAL(node->get_logger(), "Invalid command buffer index: %d", index);
         throw std::runtime_error("Invalid command buffer index");
@@ -1027,7 +1027,7 @@ uint32_t TextureLoader::findMemoryType(uint32_t type_filter, VkMemoryPropertyFla
 
     for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
     {
-        if ((type_filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+        if ((type_filter & (1 << i)) && ((mem_properties.memoryTypes[i].propertyFlags & properties) == properties))
         {
             return i;
         }
@@ -1053,7 +1053,7 @@ void TextureLoader::createImage()
     image_info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    image = VkImageUniquePtr(new VkImage, {*gui_engine->getDevice().get()});
+    image = VkImageUniquePtr(new VkImage, {gui_engine->getDevice()});
     if (vkCreateImage(*gui_engine->getDevice().get(), &image_info, nullptr, image.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create image!");
@@ -1068,7 +1068,7 @@ void TextureLoader::createImage()
     alloc_info.allocationSize = mem_requirements.size;
     alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    image_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, {*gui_engine->getDevice().get()});
+    image_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, {gui_engine->getDevice()});
     if (vkAllocateMemory(*gui_engine->getDevice().get(), &alloc_info, nullptr, image_memory.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate image memory!");
@@ -1089,7 +1089,7 @@ void TextureLoader::createImageView()
     view_info.subresourceRange.baseMipLevel = 0;
     view_info.subresourceRange.levelCount = 1;
     view_info.subresourceRange.layerCount = 1;
-    image_view = VkImageViewUniquePtr(new VkImageView, {*gui_engine->getDevice().get()});
+    image_view = VkImageViewUniquePtr(new VkImageView, {gui_engine->getDevice()});
     if (vkCreateImageView(*gui_engine->getDevice().get(), &view_info, nullptr, image_view.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture image view!");
@@ -1110,7 +1110,7 @@ void TextureLoader::createSampler()
     sampler_info.minLod = -1000;
     sampler_info.maxLod = 1000;
     sampler_info.maxAnisotropy = 1.0f;
-    sampler = VkSamplerUniquePtr(new VkSampler, {*gui_engine->getDevice().get()});
+    sampler = VkSamplerUniquePtr(new VkSampler, {gui_engine->getDevice()});
     if (vkCreateSampler(*gui_engine->getDevice().get(), &sampler_info, nullptr, sampler.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture sampler!");
@@ -1127,7 +1127,7 @@ void TextureLoader::createUploadBuffer()
     buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    upload_buffer = VkBufferUniquePtr(new VkBuffer, {*gui_engine->getDevice().get()});
+    upload_buffer = VkBufferUniquePtr(new VkBuffer, {gui_engine->getDevice()});
     if (vkCreateBuffer(*gui_engine->getDevice().get(), &buffer_info, nullptr, upload_buffer.get()) != VK_SUCCESS)
     {
         RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create buffer!");
@@ -1142,7 +1142,7 @@ void TextureLoader::createUploadBuffer()
     alloc_info.allocationSize = mem_requirements.size;
     alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-    upload_buffer_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, {*gui_engine->getDevice().get()});
+    upload_buffer_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, VkDeviceMemoryDeleter{gui_engine->getDevice()});
     if (vkAllocateMemory(*gui_engine->getDevice().get(), &alloc_info, nullptr, upload_buffer_memory.get()) !=
         VK_SUCCESS)
     {
