@@ -18,7 +18,8 @@
     {                                                                                                                  \
         void operator()(Vk##obj *obj) const { vkDestroy##obj(*obj, nullptr); };                                        \
     };                                                                                                                 \
-    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;
+    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;                                             \
+    using Vk##obj##SharedPtr = std::shared_ptr<Vk##obj>;
 
 #define VK_DECLARE_TYPE_WITH_PARENT(obj, parent)                                                                       \
     struct Vk##obj##Deleter                                                                                            \
@@ -26,7 +27,19 @@
         Vk##parent parent;                                                                                             \
         void operator()(Vk##obj *obj) const { vkDestroy##obj(parent, *obj, nullptr); };                                \
     };                                                                                                                 \
-    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;
+    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;                                             \
+    using Vk##obj##SharedPtr = std::shared_ptr<Vk##obj>;
+
+#define VK_DECLARE_GETTER(obj, var)                                                                                    \
+    Vk##obj##SharedPtr get##obj()                                                                                      \
+    {                                                                                                                  \
+        if (!var)                                                                                                      \
+        {                                                                                                              \
+            RCLCPP_FATAL(node->get_logger(), "The object " #var " wasn't initialized");                                \
+            throw std::runtime_error("The object " #var " wasn't initialized");                                        \
+        }                                                                                                              \
+        return var;                                                                                                    \
+    }
 
 namespace gui_node
 {
@@ -221,12 +234,12 @@ private:
     /**
      * Records a command buffer for copying the image data to the GPU.
      *
-     * @param command_pool Command pool to use.
+     * @param command_pool Shared pointer to the command pool to use.
      * @param graphics_queue Graphics queue to use.
      *
      * @throw std::runtime_error If the command buffer cannot be recorded.
      */
-    void recordCommandBuffer(const VkCommandPool &command_pool, const VkQueue &graphics_queue);
+    void recordCommandBuffer(VkCommandPoolSharedPtr command_pool, const VkQueue &graphics_queue);
 
     int channels;                                 ///< Number of channels in the textures
     int height;                                   ///< Height of the textures
@@ -509,21 +522,21 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 
     GLFWwindowUniquePtr window; ///< GLFW Window
 
-    VkCommandPoolUniquePtr command_pool;               ///< Command pool
+    VkCommandPoolSharedPtr command_pool;               ///< Command pool
     VkDebugUtilsMessengerEXTUniquePtr debug_messenger; ///< Debug messenger
-    VkDescriptorPoolUniquePtr descriptor_pool;         ///< Descriptor pool for ImGui
-    VkDeviceUniquePtr device;                          ///< Vulkan logical device
+    VkDescriptorPoolSharedPtr descriptor_pool;         ///< Descriptor pool for ImGui
+    VkDeviceSharedPtr device;                          ///< Vulkan logical device
     VkExtent2D swap_chain_extent;                      ///< Swap chain extent
     VkFormat swap_chain_image_format;                  ///< Swap chain image format
-    VkInstanceUniquePtr instance;                      ///< Vulkan instance
+    VkInstanceSharedPtr instance;                      ///< Vulkan instance
     VkQueue graphics_queue;                            ///< Graphics queue
     VkQueue present_queue;                             ///< Queue for presenting images to the screen
-    VkRenderPassUniquePtr render_pass;                 ///< Render pass
+    VkRenderPassSharedPtr render_pass;                 ///< Render pass
     VkSurfaceKHRUniquePtr surface;                     ///< Surface for rendering
     VkSwapchainKHRUniquePtr swap_chain;                ///< Swapchain for presenting images to the screen
 
     std::unique_ptr<ImGuiEngine> imgui_engine;                    ///< ImGui engine
-    std::unique_ptr<VkPhysicalDevice> physical_device;            ///< Physical device (GPU) that Vulkan will be using
+    std::shared_ptr<VkPhysicalDevice> physical_device;            ///< Physical device (GPU) that Vulkan will be using
     std::vector<VkCommandBuffer> command_buffers;                 ///< Command buffers
     std::vector<VkFenceUniquePtr> in_flight_fences;               ///< Fences for in flight frames
     std::vector<VkFramebufferUniquePtr> swap_chain_framebuffers;  ///< Framebuffers for the swap chain images
@@ -614,86 +627,82 @@ public:
      *
      * @param index The index of the command buffer.
      * @return VkCommandBuffer The command buffer.
+     *
+     * @throws std::runtime_error if the index is out of bounds.
      */
-    VkCommandBuffer getCommandBuffer(int index) const { return command_buffers[index]; }
+    VkCommandBuffer getCommandBuffer(int index) const;
 
     /**
      * Gets the command pool.
      *
-     * @return VkCommandPool The command pool.
+     * @return VkCommandPoolSharedPtr The shared pointer to the command pool.
+     *
+     * @throws std::runtime_error if the command pool is not initialized.
      */
-    VkCommandPool getCommandPool() const { return *command_pool.get(); }
+    VK_DECLARE_GETTER(CommandPool, command_pool)
 
     /**
      * Gets the render pass.
      *
-     * @return VkRenderPass The render pass.
+     * @return VkRenderPassSharedPtr The shared pointer to the render pass.
+     *
+     * @throws std::runtime_error if the render pass is not initialized.
      */
-    VkRenderPass getRenderPass() const { return *render_pass.get(); }
+    VK_DECLARE_GETTER(RenderPass, render_pass)
 
     /**
      * Gets the swap chain images.
      *
      * @return std::vector<VkImage> The swap chain images.
+     *
+     * @throws std::runtime_error if the swap chain images are empty.
      */
-    std::vector<VkImage> getSwapChainImages() const { return swap_chain_images; }
+    std::vector<VkImage> getSwapChainImages() const;
 
     /**
      * Gets the descriptor pool.
      *
-     * @return VkDescriptorPool The descriptor pool.
+     * @return VkDescriptorPoolSharedPtr Shared pointer to the descriptor pool.
+     *
+     * @throws std::runtime_error if the descriptor pool is not initialized.
      */
-    VkDescriptorPool getDescriptorPool() const { return *descriptor_pool.get(); }
+    VK_DECLARE_GETTER(DescriptorPool, descriptor_pool)
 
     /**
      * Gets the instance object.
      *
-     * @return VkInstance The instance object.
-     */
-    VkInstance getInstance() const { return *instance.get(); }
-
-    /**
-     * Gets the surface object.
+     * @return VkInstanceSharedPtr Shared pointer to the instance object.
      *
-     * @return VkSurfaceKHR The surface object.
+     * @throws std::runtime_error if the instance is not initialized.
      */
-    VkSurfaceKHR getSurface() const { return *surface.get(); }
+    VK_DECLARE_GETTER(Instance, instance)
 
     /**
      * Gets the graphics queue.
      *
      * @return VkQueue The graphics queue.
+     *
+     * @ throws std::runtime_error if the graphics queue is not initialized.
      */
-    VkQueue getGraphicsQueue() const { return graphics_queue; }
+    VkQueue getGraphicsQueue() const;
 
     /**
      * Gets the logical device.
      *
-     * @return VkDevice The logical device.
-     */
-    VkDevice getDevice() const { return *device.get(); }
-
-    /**
-     * Gets the swap chain.
+     * @return VkDeviceSharedPtr Shared pointer to the logical device.
      *
-     * @return VkSwapchainKHR The swap chain.
+     * @throws std::runtime_error if the logical device is not initialized.
      */
-    VkSwapchainKHR getSwapChain() const { return *swap_chain.get(); }
+    VK_DECLARE_GETTER(Device, device)
 
     /**
      * Gets the physical device object.
      *
-     * @return VkPhysicalDevice The physical device object.
-     */
-    VkPhysicalDevice getPhysicalDevice() const { return *physical_device.get(); }
-
-    /**
-     * Gets the frame buffer at the given index.
+     * @return std::shared_ptr<VkPhysicalDevice> Shared pointer to the physical device object.
      *
-     * @param index The index of the frame buffer.
-     * @return VkFramebuffer The frame buffer.
+     * @throws std::runtime_error if the physical device is not initialized.
      */
-    VkFramebuffer getFrameBuffer(int index) const { return *swap_chain_framebuffers[index].get(); }
+    std::shared_ptr<VkPhysicalDevice> getPhysicalDevice() const;
 
     /**
      * Find the queue families of the physical device.
