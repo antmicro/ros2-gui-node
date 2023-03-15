@@ -11,8 +11,6 @@
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
-#include "gui_node/gui_node.hpp"
-
 #define VK_DECLARE_TYPE(obj)                                                                                           \
     struct Vk##obj##Deleter                                                                                            \
     {                                                                                                                  \
@@ -58,6 +56,18 @@ VK_DECLARE_TYPE_WITH_PARENT(Sampler, Device)        ///< Define a unique pointer
 VK_DECLARE_TYPE_WITH_PARENT(Semaphore, Device)      ///< Define a unique pointer for a VkSemaphore
 VK_DECLARE_TYPE_WITH_PARENT(SurfaceKHR, Instance)   ///< Define a unique pointer for a VkSurfaceKHR
 VK_DECLARE_TYPE_WITH_PARENT(SwapchainKHR, Device)   ///< Define a unique pointer for a VkSwapchainKHR
+
+/**
+ * Verifies if the given Vulkan result is a success.
+ * If not, it throws the RCLCPP_FATAL and a runtime error with given message.
+ *
+ * @param result The result to verify.
+ * @param logger The logger to use.
+ * @param message The message to display if the result is not a success.
+ *
+ * @throw std::runtime_error If the result is not a success.
+ */
+void checkVulkanResult(VkResult result, const rclcpp::Logger &logger, const std::string &message);
 
 class GuiEngine; ///< Forward declaration
 
@@ -253,19 +263,21 @@ private:
     VkImageUniquePtr image;                       ///< Image for the textures
     VkImageViewUniquePtr image_view;              ///< Image view for the textures
     VkSamplerUniquePtr sampler;                   ///< Sampler for the textures
+    std::shared_ptr<rclcpp::Node> node;           ///< Pointer to the ROS2 node
 
 public:
     /**
      * Creates a texture loader.
      *
      * @param gui_engine Pointer to the GUI engine.
+     * @param node Pointer to the GUI node.
      * @param image_data Vector of the image data.
      * @param width Width of the image.
      * @param height Height of the image.
      * @param channels Number of channels in the image.
      */
-    TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::vector<unsigned char> image_data, int width, int height,
-                  int channels);
+    TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<rclcpp::Node> node,
+                  std::vector<unsigned char> image_data, int width, int height, int channels);
 
     /**
      * Destroys the texture loader and frees all resources.
@@ -518,7 +530,7 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     const std::string application_name;         ///< Name of the application
     uint32_t current_frame = 0;                 ///< Current frame
     std::vector<std::string> device_extensions; ///< Device extensions required for the application
-    std::shared_ptr<GuiNode> node;              ///< The ROS2 node for the GUI
+    std::shared_ptr<rclcpp::Node> node;         ///< The ROS2 node for logging
 
     GLFWwindowUniquePtr window; ///< GLFW Window
 
@@ -563,7 +575,7 @@ public:
      * @param application_name The name of the application window.
      * @param node The ROS2 node for the GUI.
      */
-    GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node);
+    GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp::Node> node);
 
     /**
      * Constructor.
@@ -572,7 +584,7 @@ public:
      * @param node The ROS2 node for the GUI.
      * @param device_extensions Vector of required extensions for physical device.
      */
-    GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
+    GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp::Node> node,
               const std::vector<std::string> &device_extensions);
 
     /**

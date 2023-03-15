@@ -17,6 +17,15 @@
 namespace gui_node
 {
 
+void checkVulkanResult(VkResult result, const rclcpp::Logger &logger, const std::string &message)
+{
+    if (result != VK_SUCCESS)
+    {
+        RCLCPP_FATAL(logger, "%s", message.c_str());
+        throw std::runtime_error(message);
+    }
+}
+
 bool GuiEngine::checkValidationLayerSupport()
 {
     uint32_t layer_count;
@@ -127,11 +136,8 @@ void GuiEngine::createInstance()
     }
 
     instance = VkInstanceSharedPtr(new VkInstance);
-    if (vkCreateInstance(&create_info, nullptr, getInstance().get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create instance");
-        throw std::runtime_error("Failed to create instance");
-    }
+    VkResult result = vkCreateInstance(&create_info, nullptr, getInstance().get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create Vulkan instance");
 }
 
 void GuiEngine::setupDebugMessenger()
@@ -151,11 +157,8 @@ void GuiEngine::setupDebugMessenger()
 
     if (func)
     {
-        if (func(*getInstance().get(), &create_info, nullptr, debug_messenger.get()) != VK_SUCCESS)
-        {
-            RCLCPP_FATAL(node->get_logger(), "Failed to set up debug messenger");
-            throw std::runtime_error("Failed to set up debug messenger");
-        }
+        VkResult result = func(*getInstance().get(), &create_info, nullptr, debug_messenger.get());
+        checkVulkanResult(result, node->get_logger(), "Failed to set up debug messenger");
     }
     else
     {
@@ -167,11 +170,8 @@ void GuiEngine::setupDebugMessenger()
 void GuiEngine::createSurface()
 {
     surface = VkSurfaceKHRUniquePtr(new VkSurfaceKHR, {getInstance()});
-    if (glfwCreateWindowSurface(*getInstance().get(), getWindow(), nullptr, surface.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create window surface");
-        throw std::runtime_error("Failed to create window surface");
-    }
+    VkResult result = glfwCreateWindowSurface(*getInstance().get(), getWindow(), nullptr, surface.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create window surface");
 }
 
 void GuiEngine::createPhysicalDevice()
@@ -233,11 +233,8 @@ void GuiEngine::createLogicalDevice()
     create_info.enabledLayerCount = 0;
 
     device = VkDeviceSharedPtr(new VkDevice);
-    if (vkCreateDevice(*getPhysicalDevice().get(), &create_info, nullptr, getDevice().get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create logical device");
-        throw std::runtime_error("Failed to create logical device");
-    }
+    VkResult result = vkCreateDevice(*getPhysicalDevice().get(), &create_info, nullptr, getDevice().get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create logical device");
 
     vkGetDeviceQueue(*getDevice().get(), indices.graphics_family.value(), 0, &graphics_queue);
     vkGetDeviceQueue(*getDevice().get(), indices.present_family.value(), 0, &present_queue);
@@ -292,11 +289,8 @@ void GuiEngine::createSwapChain()
     create_info.oldSwapchain = VK_NULL_HANDLE;
 
     swap_chain = VkSwapchainKHRUniquePtr(new VkSwapchainKHR, {getDevice()});
-    if (vkCreateSwapchainKHR(*getDevice().get(), &create_info, nullptr, swap_chain.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create swap chain");
-        throw std::runtime_error("Failed to create swap chain");
-    }
+    VkResult result = vkCreateSwapchainKHR(*getDevice().get(), &create_info, nullptr, swap_chain.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create swap chain");
 
     vkGetSwapchainImagesKHR(*getDevice().get(), *swap_chain.get(), &image_count, nullptr);
     swap_chain_images.resize(image_count);
@@ -329,11 +323,8 @@ void GuiEngine::createImageViews()
         create_info.image = swap_chain_images[i];
 
         swap_chain_image_views[i] = VkImageViewUniquePtr(new VkImageView, {getDevice()});
-        if (vkCreateImageView(*getDevice().get(), &create_info, nullptr, swap_chain_image_views[i].get()) != VK_SUCCESS)
-        {
-            RCLCPP_FATAL(node->get_logger(), "Failed to create image views");
-            throw std::runtime_error("Failed to create image views");
-        }
+        VkResult result = vkCreateImageView(*getDevice().get(), &create_info, nullptr, swap_chain_image_views[i].get());
+        checkVulkanResult(result, node->get_logger(), "Failed to create image views");
     }
 }
 
@@ -376,15 +367,13 @@ void GuiEngine::createRenderPass()
     render_pass_info.pDependencies = &dependency;
 
     render_pass = VkRenderPassSharedPtr(new VkRenderPass, VkRenderPassDeleter{getDevice()});
-    if (vkCreateRenderPass(*getDevice().get(), &render_pass_info, nullptr, getRenderPass().get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create render pass");
-        throw std::runtime_error("Failed to create render pass");
-    }
+    VkResult result = vkCreateRenderPass(*getDevice().get(), &render_pass_info, nullptr, getRenderPass().get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create render pass");
 }
 
 void GuiEngine::createFramebuffers()
 {
+    VkResult result;
     swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
     VkFramebufferCreateInfo framebuffer_info = {};
@@ -399,12 +388,8 @@ void GuiEngine::createFramebuffers()
     {
         swap_chain_framebuffers[i] = VkFramebufferUniquePtr(new VkFramebuffer, {getDevice()});
         framebuffer_info.pAttachments = swap_chain_image_views[i].get();
-        if (vkCreateFramebuffer(*getDevice().get(), &framebuffer_info, nullptr, swap_chain_framebuffers[i].get()) !=
-            VK_SUCCESS)
-        {
-            RCLCPP_FATAL(node->get_logger(), "Failed to create framebuffer");
-            throw std::runtime_error("Failed to create framebuffer");
-        }
+        result = vkCreateFramebuffer(*getDevice().get(), &framebuffer_info, nullptr, swap_chain_framebuffers[i].get());
+        checkVulkanResult(result, node->get_logger(), "Failed to create framebuffer");
     }
 }
 
@@ -417,11 +402,8 @@ void GuiEngine::createCommandPool()
     pool_info.queueFamilyIndex = indices.graphics_family.value();
 
     command_pool = VkCommandPoolSharedPtr(new VkCommandPool, VkCommandPoolDeleter{getDevice()});
-    if (vkCreateCommandPool(*getDevice().get(), &pool_info, nullptr, getCommandPool().get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create command pool");
-        throw std::runtime_error("Failed to create command pool");
-    }
+    VkResult result = vkCreateCommandPool(*getDevice().get(), &pool_info, nullptr, getCommandPool().get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create command pool");
 }
 
 void GuiEngine::createDescriptorPool()
@@ -447,11 +429,8 @@ void GuiEngine::createDescriptorPool()
     pool_info.pPoolSizes = pool_sizes;
 
     descriptor_pool = VkDescriptorPoolSharedPtr(new VkDescriptorPool, VkDescriptorPoolDeleter{getDevice()});
-    if (vkCreateDescriptorPool(*getDevice().get(), &pool_info, nullptr, getDescriptorPool().get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to create descriptor pool");
-        throw std::runtime_error("Failed to create descriptor pool");
-    }
+    VkResult result = vkCreateDescriptorPool(*getDevice().get(), &pool_info, nullptr, getDescriptorPool().get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create descriptor pool");
 }
 
 void GuiEngine::createCommandBuffers()
@@ -464,15 +443,14 @@ void GuiEngine::createCommandBuffers()
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandBufferCount = (uint32_t)command_buffers.size();
 
-    if (vkAllocateCommandBuffers(*getDevice().get(), &alloc_info, command_buffers.data()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to allocate command buffers");
-        throw std::runtime_error("Failed to allocate command buffers");
-    }
+    VkResult result = vkAllocateCommandBuffers(*getDevice().get(), &alloc_info, command_buffers.data());
+    checkVulkanResult(result, node->get_logger(), "Failed to allocate command buffers");
 }
 
 void GuiEngine::createSyncObjects()
 {
+    VkResult result;
+
     image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
     render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
     in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -489,15 +467,12 @@ void GuiEngine::createSyncObjects()
         image_available_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {getDevice()});
         render_finished_semaphores[i] = VkSemaphoreUniquePtr(new VkSemaphore, {getDevice()});
         in_flight_fences[i] = VkFenceUniquePtr(new VkFence, {getDevice()});
-        if (vkCreateSemaphore(*getDevice().get(), &semaphore_info, nullptr, image_available_semaphores[i].get()) !=
-                VK_SUCCESS ||
-            vkCreateSemaphore(*getDevice().get(), &semaphore_info, nullptr, render_finished_semaphores[i].get()) !=
-                VK_SUCCESS ||
-            vkCreateFence(*getDevice().get(), &fence_info, nullptr, in_flight_fences[i].get()) != VK_SUCCESS)
-        {
-            RCLCPP_FATAL(node->get_logger(), "Failed to create synchronization objects for a frame");
-            throw std::runtime_error("Failed to create synchronization objects for a frame");
-        }
+        result = vkCreateSemaphore(*getDevice().get(), &semaphore_info, nullptr, image_available_semaphores[i].get());
+        checkVulkanResult(result, node->get_logger(), "Failed to create synchronization objects for a frame");
+        result = vkCreateSemaphore(*getDevice().get(), &semaphore_info, nullptr, render_finished_semaphores[i].get());
+        checkVulkanResult(result, node->get_logger(), "Failed to create synchronization objects for a frame");
+        result = vkCreateFence(*getDevice().get(), &fence_info, nullptr, in_flight_fences[i].get());
+        checkVulkanResult(result, node->get_logger(), "Failed to create synchronization objects for a frame");
     }
 }
 
@@ -680,14 +655,12 @@ void GuiEngine::rebuildSwapChain()
 
 void GuiEngine::recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t image_index)
 {
+    VkResult result;
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to begin recording command buffer!");
-        throw std::runtime_error("Failed to begin recording command buffer!");
-    }
+    result = vkBeginCommandBuffer(command_buffer, &begin_info);
+    checkVulkanResult(result, node->get_logger(), "Failed to begin recording command buffer!");
 
     VkRenderPassBeginInfo render_pass_info{};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -702,11 +675,8 @@ void GuiEngine::recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t
     ImDrawData *draw_data = ImGui::GetDrawData();
     ImGui_ImplVulkan_RenderDrawData(draw_data, command_buffer);
     vkCmdEndRenderPass(command_buffer);
-    if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to record command buffer!");
-        throw std::runtime_error("Failed to record command buffer!");
-    }
+    result = vkEndCommandBuffer(command_buffer);
+    checkVulkanResult(result, node->get_logger(), "Failed to record command buffer!");
 }
 
 GuiEngine::~GuiEngine() { cleanup(); }
@@ -752,11 +722,8 @@ void GuiEngine::draw()
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
-    if (vkQueueSubmit(graphics_queue, 1, &submit_info, *in_flight_fences[current_frame].get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(node->get_logger(), "Failed to submit draw command buffer!");
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
+    result = vkQueueSubmit(graphics_queue, 1, &submit_info, *in_flight_fences[current_frame].get());
+    checkVulkanResult(result, node->get_logger(), "Failed to submit draw command buffer!");
 
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -777,12 +744,10 @@ void GuiEngine::draw()
         framebuffer_resized = false;
         rebuildSwapChain();
     }
-    else if (result != VK_SUCCESS)
+    else
     {
-        RCLCPP_FATAL(node->get_logger(), "Failed to present swap chain image!");
-        throw std::runtime_error("Failed to present swap chain image!");
+        checkVulkanResult(result, node->get_logger(), "Failed to present swap chain image!");
     }
-
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -864,13 +829,13 @@ void GuiEngine::cleanup()
     device.reset();
 }
 
-GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node)
+GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp::Node> node)
     : application_name(application_name), device_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME}), node(node),
       imgui_engine(std::make_unique<ImGuiEngine>())
 {
 }
 
-GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<GuiNode> node,
+GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp::Node> node,
                      const std::vector<std::string> &device_extensions)
     : application_name(application_name), device_extensions(device_extensions), node(node),
       imgui_engine(std::make_unique<ImGuiEngine>())
@@ -890,7 +855,8 @@ bool GuiEngine::addTexture(const std::string &name, std::vector<unsigned char> i
         RCLCPP_WARN(node->get_logger(), "Texture %s already exists!", name.c_str());
         return false;
     }
-    textures.emplace(name, std::make_shared<TextureLoader>(shared_from_this(), image_data, width, height, channels));
+    textures.emplace(name,
+                     std::make_shared<TextureLoader>(shared_from_this(), node, image_data, width, height, channels));
     return true;
 }
 
@@ -1002,9 +968,9 @@ ImGuiEngine::~ImGuiEngine()
     ImGui::DestroyContext();
 }
 
-TextureLoader::TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::vector<unsigned char> image_data, int width,
-                             int height, int channels)
-    : channels(channels), height(height), width(width), gui_engine(gui_engine), image_data(image_data)
+TextureLoader::TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<rclcpp::Node> node,
+                             std::vector<unsigned char> image_data, int width, int height, int channels)
+    : channels(channels), height(height), width(width), gui_engine(gui_engine), image_data(image_data), node(node)
 {
 }
 
@@ -1054,11 +1020,9 @@ void TextureLoader::createImage()
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     image = VkImageUniquePtr(new VkImage, {gui_engine->getDevice()});
-    if (vkCreateImage(*gui_engine->getDevice().get(), &image_info, nullptr, image.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create image!");
-        throw std::runtime_error("Failed to create image!");
-    }
+
+    VkResult result = vkCreateImage(*gui_engine->getDevice().get(), &image_info, nullptr, image.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create image!");
 
     VkMemoryRequirements mem_requirements;
     vkGetImageMemoryRequirements(*gui_engine->getDevice().get(), *image.get(), &mem_requirements);
@@ -1069,11 +1033,8 @@ void TextureLoader::createImage()
     alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     image_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, {gui_engine->getDevice()});
-    if (vkAllocateMemory(*gui_engine->getDevice().get(), &alloc_info, nullptr, image_memory.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate image memory!");
-        throw std::runtime_error("Failed to allocate image memory!");
-    }
+    result = vkAllocateMemory(*gui_engine->getDevice().get(), &alloc_info, nullptr, image_memory.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to allocate image memory!");
 
     vkBindImageMemory(*gui_engine->getDevice().get(), *image.get(), *image_memory.get(), 0);
 }
@@ -1090,11 +1051,8 @@ void TextureLoader::createImageView()
     view_info.subresourceRange.levelCount = 1;
     view_info.subresourceRange.layerCount = 1;
     image_view = VkImageViewUniquePtr(new VkImageView, {gui_engine->getDevice()});
-    if (vkCreateImageView(*gui_engine->getDevice().get(), &view_info, nullptr, image_view.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture image view!");
-        throw std::runtime_error("Failed to create texture image view!");
-    }
+    VkResult result = vkCreateImageView(*gui_engine->getDevice().get(), &view_info, nullptr, image_view.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create texture's image view!");
 }
 
 void TextureLoader::createSampler()
@@ -1111,11 +1069,9 @@ void TextureLoader::createSampler()
     sampler_info.maxLod = 1000;
     sampler_info.maxAnisotropy = 1.0f;
     sampler = VkSamplerUniquePtr(new VkSampler, {gui_engine->getDevice()});
-    if (vkCreateSampler(*gui_engine->getDevice().get(), &sampler_info, nullptr, sampler.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create texture sampler!");
-        throw std::runtime_error("Failed to create texture sampler!");
-    }
+
+    VkResult result = vkCreateSampler(*gui_engine->getDevice().get(), &sampler_info, nullptr, sampler.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create texture's sampler!");
 }
 
 void TextureLoader::createUploadBuffer()
@@ -1128,11 +1084,8 @@ void TextureLoader::createUploadBuffer()
     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     upload_buffer = VkBufferUniquePtr(new VkBuffer, {gui_engine->getDevice()});
-    if (vkCreateBuffer(*gui_engine->getDevice().get(), &buffer_info, nullptr, upload_buffer.get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to create buffer!");
-        throw std::runtime_error("Failed to create buffer!");
-    }
+    VkResult result = vkCreateBuffer(*gui_engine->getDevice().get(), &buffer_info, nullptr, upload_buffer.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to create upload buffer!");
 
     VkMemoryRequirements mem_requirements;
     vkGetBufferMemoryRequirements(*gui_engine->getDevice().get(), *upload_buffer.get(), &mem_requirements);
@@ -1143,42 +1096,28 @@ void TextureLoader::createUploadBuffer()
     alloc_info.memoryTypeIndex = findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     upload_buffer_memory = VkDeviceMemoryUniquePtr(new VkDeviceMemory, VkDeviceMemoryDeleter{gui_engine->getDevice()});
-    if (vkAllocateMemory(*gui_engine->getDevice().get(), &alloc_info, nullptr, upload_buffer_memory.get()) !=
-        VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate buffer memory!");
-        throw std::runtime_error("Failed to allocate buffer memory!");
-    }
+    result = vkAllocateMemory(*gui_engine->getDevice().get(), &alloc_info, nullptr, upload_buffer_memory.get());
+    checkVulkanResult(result, node->get_logger(), "Failed to allocate upload buffer memory!");
 
-    if (vkBindBufferMemory(*gui_engine->getDevice().get(), *upload_buffer.get(), *upload_buffer_memory.get(), 0) !=
-        VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to bind buffer memory!");
-        throw std::runtime_error("Failed to bind buffer memory!");
-    }
+    result = vkBindBufferMemory(*gui_engine->getDevice().get(), *upload_buffer.get(), *upload_buffer_memory.get(), 0);
+    checkVulkanResult(result, node->get_logger(), "Failed to bind upload buffer memory!");
 }
 
 void TextureLoader::uploadToBuffer()
 {
     size_t image_size = width * height * channels;
     void *map = nullptr;
-    if (vkMapMemory(*gui_engine->getDevice().get(), *upload_buffer_memory.get(), 0, VK_WHOLE_SIZE, 0, &map) !=
-        VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to map memory!");
-        throw std::runtime_error("Failed to map memory!");
-    }
+    VkResult result =
+        vkMapMemory(*gui_engine->getDevice().get(), *upload_buffer_memory.get(), 0, VK_WHOLE_SIZE, 0, &map);
+    checkVulkanResult(result, node->get_logger(), "Failed to map upload buffer memory!");
 
     memcpy(map, image_data.data(), image_size);
     VkMappedMemoryRange range = {};
     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range.memory = *upload_buffer_memory.get();
     range.size = VK_WHOLE_SIZE;
-    if (vkFlushMappedMemoryRanges(gui_engine->getDevice(), 1, &range) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to flush memory!");
-        throw std::runtime_error("Failed to flush memory!");
-    }
+    result = vkFlushMappedMemoryRanges(*gui_engine->getDevice().get(), 1, &range);
+    checkVulkanResult(result, node->get_logger(), "Failed to flush upload buffer memory!");
     vkUnmapMemory(*gui_engine->getDevice().get(), *upload_buffer_memory.get());
 }
 
@@ -1192,20 +1131,14 @@ void TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     alloc_info.commandPool = *command_pool.get();
     alloc_info.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(*gui_engine->getDevice().get(), &alloc_info, &command_buffer) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to allocate command buffers!");
-        throw std::runtime_error("Failed to allocate command buffers!");
-    }
+    VkResult result = vkAllocateCommandBuffers(*gui_engine->getDevice().get(), &alloc_info, &command_buffer);
+    checkVulkanResult(result, node->get_logger(), "Failed to allocate command buffer!");
 
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to begin recording command buffer!");
-        throw std::runtime_error("Failed to begin recording command buffer!");
-    }
+    result = vkBeginCommandBuffer(command_buffer, &begin_info);
+    checkVulkanResult(result, node->get_logger(), "Failed to begin command buffer!");
 
     // Copy buffer to image
     VkImageMemoryBarrier copy_barrier = {};
@@ -1251,21 +1184,12 @@ void TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buffer;
-    if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to record command buffer!");
-        throw std::runtime_error("Failed to record command buffer!");
-    }
-    if (vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to submit draw command buffer!");
-        throw std::runtime_error("Failed to submit draw command buffer!");
-    }
-    if (vkDeviceWaitIdle(*gui_engine->getDevice().get()) != VK_SUCCESS)
-    {
-        RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to wait for device to become idle!");
-        throw std::runtime_error("Failed to wait for device to become idle!");
-    }
+    result = vkEndCommandBuffer(command_buffer);
+    checkVulkanResult(result, node->get_logger(), "Failed to end command buffer!");
+    result = vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    checkVulkanResult(result, node->get_logger(), "Failed to submit command buffer!");
+    result = vkDeviceWaitIdle(*gui_engine->getDevice().get());
+    checkVulkanResult(result, node->get_logger(), "Failed to wait for device to become idle!");
 }
 
 TextureLoader::~TextureLoader() { ImGui_ImplVulkan_RemoveTexture(descriptor_set); }
