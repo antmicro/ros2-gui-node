@@ -40,7 +40,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='gui_node',
-                plugin='gui_node::RosoutSubscriberNode',
+                plugin='gui_node::RosoutSubscriber',
                 name='rosout_subscriber')
         ],
         output='both',
@@ -60,4 +60,17 @@ def generate_launch_description():
         output='both',
     )
 
-    return launch.LaunchDescription([rosout_topic_subscriber, video_publisher])
+    video_subscriber = ComposableNodeContainer(
+        name='video_subscriber_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='gui_node',
+                plugin='gui_node::VideoSubscriber',
+                name='video_subscriber')
+        ],
+        output='both',
+    )
+    return launch.LaunchDescription([rosout_topic_subscriber, video_publisher, video_subscriber])

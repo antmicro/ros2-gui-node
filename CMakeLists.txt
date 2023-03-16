@@ -142,6 +142,31 @@ rclcpp_components_register_nodes(gui_node_sample_video_publish "gui_node::VideoP
 set(node_plugins "${gui_node_sample_rosout}gui_node::VideoPublisher;$<TARGET_FILE:video_publisher_node>\n")
 
 #######################
+# Video subscriber node
+#######################
+add_library(gui_node_sample_video_subscribe SHARED
+    src/samples/video_subscriber_node.cpp
+    src/gui_node.cpp
+    src/gui_engine.cpp
+    ${IMGUI_SOURCES}
+)
+
+target_link_libraries(gui_node_sample_video_subscribe
+    glfw
+    Vulkan::Vulkan
+    ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(gui_node_sample_video_subscribe
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+)
+
+rclcpp_components_register_nodes(gui_node_sample_video_subscribe "gui_node::VideoSubscriber")
+set(node_plugins "${gui_node_sample_video_subscribe}gui_node::VideoSubscriber;$<TARGET_FILE:video_subscriber_node>\n")
+
+#######################
 # Install
 #######################
 install(TARGETS
@@ -149,6 +174,7 @@ install(TARGETS
     gui_node_sample_subscriber
     gui_node_sample_rosout
     gui_node_sample_video_publish
+    gui_node_sample_video_subscribe
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
