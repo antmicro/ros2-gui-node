@@ -37,7 +37,7 @@ public:
                 date[strlen(date) - 1] = '\0';
                 auto pub =
                     this->getRosData("time_publisher")->as<RosPublisherData<std_msgs::msg::String, std::string>>();
-                pub.publish(std::string(date));
+                pub->publish(std::string(date));
                 RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Publishing: %s", date);
             });
     }

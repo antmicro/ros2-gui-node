@@ -1,6 +1,3 @@
-#ifndef GUI_NODE_GUI_NODE_HPP
-#define GUI_NODE_GUI_NODE_HPP
-
 #pragma once
 
 #include <exception>
@@ -40,7 +37,7 @@ class GuiNode;
 /**
  * A class that holds the data for a single ROS2 node element.
  */
-class RosData
+class RosData : public std::enable_shared_from_this<RosData>
 {
 private:
     std::shared_ptr<GuiNode> node; ///< The node that owns this data.
@@ -56,9 +53,9 @@ public:
      * Casts the object to a Ros*Data object.
      *
      * @tparam T The type of the object to cast to, must be a subclass of RosData.
-     * @return The object cast to the specified type.
+     * @return Casted RosData shared pointer to the specified type.
      */
-    template <class T> T &as() { return *dynamic_cast<T *>(this); }
+    template <class T> std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
 
     virtual ~RosData() {}
 };
@@ -100,5 +97,3 @@ public:
     void addRosData(const std::string &node_name, std::shared_ptr<RosData> ros_data);
 };
 } // namespace gui_node
-
-#endif // GUI_NODE_GUI_NODE_HPP
