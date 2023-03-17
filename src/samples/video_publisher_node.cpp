@@ -101,7 +101,7 @@ public:
         std::shared_ptr<VideoPublisherWidget> widget =
             std::make_shared<VideoPublisherWidget>(gui_node_ptr, "[Pub] Video publisher");
         gui_node_ptr->addWidget("video_publisher", widget);
-        gui_node_ptr->prepareWidgets("[Pub] Video publisher");
+        gui_node_ptr->prepare("[Pub] Video publisher");
         video_thread = std::thread(std::bind(&VideoPublisher::run, this));
     }
 

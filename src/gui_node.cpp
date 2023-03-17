@@ -44,7 +44,7 @@ void GuiNode::addWidget(const std::string &widget_name, std::shared_ptr<Widget> 
     widget_map.emplace(widget_name, widget);
 }
 
-void GuiNode::prepareWidgets(const std::string &application_name)
+void GuiNode::prepare(const std::string &application_name)
 {
     gui_engine = std::make_shared<GuiEngine>(application_name, shared_from_this());
     gui_engine->init();
@@ -53,6 +53,11 @@ void GuiNode::prepareWidgets(const std::string &application_name)
 
 void GuiNode::render()
 {
+    if (!gui_engine)
+    {
+        RCLCPP_FATAL(get_logger(), "GuiEngine not initialized");
+        throw std::runtime_error("GuiEngine not initialized");
+    }
     if (!glfwWindowShouldClose(gui_engine->getWindow()))
     {
         glfwPollEvents();

@@ -54,7 +54,7 @@ public:
         std::shared_ptr<VideoSubscriberWidget> widget =
             std::make_shared<VideoSubscriberWidget>(gui_node_ptr, "[Sub] Video subscriber");
         gui_node_ptr->addWidget("video_subscriber", widget);
-        gui_node_ptr->prepareWidgets("[Sub] Video subscriber");
+        gui_node_ptr->prepare("[Sub] Video subscriber");
     }
 
     ~VideoSubscriber() {}

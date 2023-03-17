@@ -1,6 +1,3 @@
-#ifndef GUI_NODE_GUI_ENGINE_HPP
-#define GUI_NODE_GUI_ENGINE_HPP
-
 #pragma once
 
 #include <GLFW/glfw3.h>
@@ -337,7 +334,7 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     /**
      * Creates create info for the debug messenger.
      *
-     * @param create_info Reference to the create info to be filled.
+     * @param create_info Reference to the creation info to be filled.
      */
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create_info);
 
@@ -726,4 +723,3 @@ public:
 };
 
 } // namespace gui_node
-#endif // GUI_NODE_GUI_ENGINE_HPP

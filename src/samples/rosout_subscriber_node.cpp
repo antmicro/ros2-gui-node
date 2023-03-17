@@ -31,7 +31,7 @@ public:
         std::shared_ptr<WidgetRosout> subscriber_widget =
             std::make_shared<WidgetRosout>(gui_node_ptr, ros_data_name, "[Sub] /rosout log", 10);
         gui_node_ptr->addWidget("rosout_widget", subscriber_widget);
-        gui_node_ptr->prepareWidgets("[Sub] /rosout");
+        gui_node_ptr->prepare("[Sub] /rosout");
     }
 
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface()

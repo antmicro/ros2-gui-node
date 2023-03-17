@@ -54,7 +54,7 @@ public:
         std::shared_ptr<TimeSubscriberWidget> subscriber_widget =
             std::make_shared<TimeSubscriberWidget>(gui_node_ptr, "[Sub] Date and time");
         gui_node_ptr->addWidget("time_widget", subscriber_widget);
-        gui_node_ptr->prepareWidgets("Time subscriber");
+        gui_node_ptr->prepare("Time subscriber");
     }
 
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface()

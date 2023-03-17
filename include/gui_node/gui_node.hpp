@@ -59,7 +59,7 @@ public:
      * Casts the object to a Ros*Data object.
      *
      * @tparam T The type of the object to cast to, must be a subclass of RosData.
-     * @return Casted RosData shared pointer to the specified type.
+     * @return Cast RosData shared pointer to the specified type.
      */
     template <class T> std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
 
@@ -118,11 +118,11 @@ public:
     void addWidget(const std::string &widget_name, std::shared_ptr<Widget> widget);
 
     /**
-     * Prepares the widgets for rendering
+     * Prepares the GuiEngine for rendering
      *
      * @param application_name Name of the application
      */
-    void prepareWidgets(const std::string &application_name);
+    void prepare(const std::string &application_name);
 
     /**
      * Renders the frame using defined widgets

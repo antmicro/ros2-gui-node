@@ -66,7 +66,7 @@ public:
         // Adds time publisher widget to the node
         std::shared_ptr<PublisherWidget> widget = std::make_shared<PublisherWidget>(gui_node_ptr);
         gui_node_ptr->addWidget("time_widget", widget);
-        gui_node_ptr->prepareWidgets("Time publisher");
+        gui_node_ptr->prepare("Time publisher");
     }
 
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface()
