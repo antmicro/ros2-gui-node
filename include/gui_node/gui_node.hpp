@@ -1,9 +1,12 @@
 #pragma once
 
 #include <exception>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>
+
+#include "gui_node/widget/widget.hpp"
 
 namespace gui_node
 {
@@ -33,6 +36,9 @@ public:
 
 // Forward declaration
 class GuiNode;
+
+// Forward declaration
+class Widget;
 
 /**
  * A class that holds the data for a single ROS2 node element.
@@ -69,6 +75,9 @@ class GuiNode : public rclcpp::Node
 {
 private:
     std::unordered_map<std::string, std::shared_ptr<RosData>> ros_data_map; ///< Map of RosData nodes
+    std::unordered_map<std::string, std::shared_ptr<Widget>> widget_map;    ///< Map of widgets
+    std::unique_ptr<GuiEngine> gui_engine;                                  ///< The GUI engine
+    rclcpp::TimerBase::SharedPtr timer;                                     ///< The timer used to update the GUI
 public:
     /**
      * Constructor
@@ -82,8 +91,9 @@ public:
      * Get the RosData node by name
      *
      * @param node_name Name of the node
-     * @throws RosDataException if the node with the name doesn't exist
      * @return shared_ptr<RosData> The shared pointer to the RosData node
+     *
+     * @throws RosDataException if the node with the name doesn't exist
      */
     std::shared_ptr<RosData> &getRosData(const std::string &node_name);
 
@@ -92,8 +102,33 @@ public:
      *
      * @param node_name Name of the node
      * @param ros_data RosData node
+     *
      * @throws RosDataException if the node with the name already exists
      */
     void addRosData(const std::string &node_name, std::shared_ptr<RosData> ros_data);
+
+    /**
+     * Adds a Widget to the widgets map
+     *
+     * @param widget_name Name of the widget
+     * @param widget Shared pointer to the widget
+     *
+     * @throws RosDataException if the widget with the name already exists
+     */
+    void addWidget(const std::string &widget_name, std::shared_ptr<Widget> widget);
+
+    /**
+     * Prepares the widgets for rendering
+     *
+     * @param application_name Name of the application
+     */
+    void prepareWidgets(const std::string &application_name);
+
+    /**
+     * Renders the frame using defined widgets
+     *
+     * @throws std::runtime_error if the GuiEngine is not initialized
+     */
+    void render();
 };
 } // namespace gui_node
