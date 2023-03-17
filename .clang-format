@@ -10,6 +10,7 @@ AccessModifierOffset: -4 # before v13
 
 BreakBeforeBraces: Allman
 AlwaysBreakAfterReturnType: None
+AlignEscapedNewlines: Left
 
 PenaltyBreakComment: 0
 ColumnLimit: 120

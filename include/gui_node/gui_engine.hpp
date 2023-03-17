@@ -11,32 +11,32 @@
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
-#define VK_DECLARE_TYPE(obj)                                                                                           \
-    struct Vk##obj##Deleter                                                                                            \
-    {                                                                                                                  \
-        void operator()(Vk##obj *obj) const { vkDestroy##obj(*obj, nullptr); };                                        \
-    };                                                                                                                 \
-    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;                                             \
+#define VK_DECLARE_TYPE(obj)                                                    \
+    struct Vk##obj##Deleter                                                     \
+    {                                                                           \
+        void operator()(Vk##obj *obj) const { vkDestroy##obj(*obj, nullptr); }; \
+    };                                                                          \
+    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;      \
     using Vk##obj##SharedPtr = std::shared_ptr<Vk##obj>;
 
-#define VK_DECLARE_TYPE_WITH_PARENT(obj, parent)                                                                       \
-    struct Vk##obj##Deleter                                                                                            \
-    {                                                                                                                  \
-        Vk##parent##SharedPtr parent;                                                                                  \
-        void operator()(Vk##obj *obj) const { vkDestroy##obj(*parent.get(), *obj, nullptr); };                         \
-    };                                                                                                                 \
-    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;                                             \
+#define VK_DECLARE_TYPE_WITH_PARENT(obj, parent)                                               \
+    struct Vk##obj##Deleter                                                                    \
+    {                                                                                          \
+        Vk##parent##SharedPtr parent;                                                          \
+        void operator()(Vk##obj *obj) const { vkDestroy##obj(*parent.get(), *obj, nullptr); }; \
+    };                                                                                         \
+    using Vk##obj##UniquePtr = std::unique_ptr<Vk##obj, Vk##obj##Deleter>;                     \
     using Vk##obj##SharedPtr = std::shared_ptr<Vk##obj>;
 
-#define VK_DECLARE_GETTER(obj, var)                                                                                    \
-    Vk##obj##SharedPtr get##obj()                                                                                      \
-    {                                                                                                                  \
-        if (!var)                                                                                                      \
-        {                                                                                                              \
-            RCLCPP_FATAL(node->get_logger(), "The object " #var " wasn't initialized");                                \
-            throw std::runtime_error("The object " #var " wasn't initialized");                                        \
-        }                                                                                                              \
-        return var;                                                                                                    \
+#define VK_DECLARE_GETTER(obj, var)                                                     \
+    Vk##obj##SharedPtr get##obj()                                                       \
+    {                                                                                   \
+        if (!var)                                                                       \
+        {                                                                               \
+            RCLCPP_FATAL(node->get_logger(), "The object " #var " wasn't initialized"); \
+            throw std::runtime_error("The object " #var " wasn't initialized");         \
+        }                                                                               \
+        return var;                                                                     \
     }
 
 namespace gui_node
