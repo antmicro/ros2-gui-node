@@ -14,7 +14,28 @@ namespace gui_node
 class VideoSubscriberWidget : public Widget
 {
 private:
+    int encoding2channels(const std::string &encoding)
+    {
+        if (encoding == "mono8" || encoding == "mono16")
+        {
+            return 1;
+        }
+        else if (encoding == "bgr8")
+        {
+            return 3;
+        }
+        else if (encoding == "rgba8")
+        {
+            return 4;
+        }
+        else
+        {
+            throw std::runtime_error("Unsupported encoding: " + encoding);
+        }
+    }
+
     const std::string window_name;
+    bool is_texture_initialized = false;
 
 public:
     VideoSubscriberWidget(std::shared_ptr<GuiNode> gui_node, const std::string window_name)
@@ -31,9 +52,18 @@ public:
         sensor_msgs::msg::Image::SharedPtr msg = subscriber->getData();
         if (msg)
         {
-            cv::Mat image(msg->height, msg->width, CV_8UC3, msg->data.data());
-            cv::imshow(window_name, image);
-            cv::waitKey(1);
+            std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
+            if (!is_texture_initialized)
+            {
+                int channels = encoding2channels(msg->encoding);
+                gui_engine->addTexture(window_name, msg->data, msg->width, msg->height, channels);
+                is_texture_initialized = true;
+            }
+            auto texture_loader = gui_engine->getTexture(window_name);
+            ImGui::Begin("Test Texture");
+            ImGui::Image((ImTextureID)texture_loader->getDescriptorSet(),
+                         ImVec2(texture_loader->getWidth(), texture_loader->getHeight()));
+            ImGui::End();
         }
     }
 };

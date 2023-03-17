@@ -845,9 +845,10 @@ GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp
 bool GuiEngine::addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height,
                            int channels)
 {
-    if (initialized)
+    if (!initialized)
     {
-        RCLCPP_ERROR(rclcpp::get_logger("GuiEngine"), "Cannot add texture after initialization!");
+        RCLCPP_ERROR(node->get_logger(), "Cannot add texture before initialization!");
+        throw std::runtime_error("Cannot add texture before initialization!");
         return false;
     }
     if (textures.find(name) != textures.end())
@@ -857,6 +858,7 @@ bool GuiEngine::addTexture(const std::string &name, std::vector<unsigned char> i
     }
     textures.emplace(name,
                      std::make_shared<TextureLoader>(shared_from_this(), node, image_data, width, height, channels));
+    textures[name]->init();
     return true;
 }
 
@@ -999,7 +1001,7 @@ uint32_t TextureLoader::findMemoryType(uint32_t type_filter, VkMemoryPropertyFla
         }
     }
 
-    RCLCPP_FATAL(rclcpp::get_logger("TextureLoader"), "Failed to find suitable memory type!");
+    RCLCPP_FATAL(node->get_logger(), "Failed to find suitable memory type!");
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
@@ -1008,7 +1010,7 @@ void TextureLoader::createImage()
     VkImageCreateInfo image_info{};
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image_info.imageType = VK_IMAGE_TYPE_2D;
-    image_info.format = VK_FORMAT_R8G8B8A8_UNORM;
+    image_info.format = VK_FORMAT_R8G8B8A8_SRGB;
     image_info.extent.width = width;
     image_info.extent.height = height;
     image_info.extent.depth = 1;
@@ -1045,7 +1047,7 @@ void TextureLoader::createImageView()
     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     view_info.image = *image.get();
     view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_info.format = VK_FORMAT_R8G8B8A8_UNORM;
+    view_info.format = VK_FORMAT_R8G8B8A8_SRGB;
     view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     view_info.subresourceRange.baseMipLevel = 0;
     view_info.subresourceRange.levelCount = 1;

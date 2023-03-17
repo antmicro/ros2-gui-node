@@ -130,5 +130,14 @@ public:
      * @throws std::runtime_error if the GuiEngine is not initialized
      */
     void render();
+
+    /**
+     * Get the GuiEngine
+     *
+     * @return shared_ptr<GuiEngine> The shared pointer to the GuiEngine
+     *
+     * @throws std::runtime_error if the GuiEngine is not initialized
+     */
+    std::shared_ptr<GuiEngine> getGuiEngine();
 };
 } // namespace gui_node

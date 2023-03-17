@@ -77,6 +77,16 @@ void GuiNode::render()
     }
 }
 
+std::shared_ptr<GuiEngine> GuiNode::getGuiEngine()
+{
+    if (!gui_engine)
+    {
+        RCLCPP_FATAL(get_logger(), "GuiEngine not initialized");
+        throw std::runtime_error("GuiEngine not initialized");
+    }
+    return gui_engine;
+}
+
 } // namespace gui_node
 
 #include "rclcpp_components/register_node_macro.hpp"
