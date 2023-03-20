@@ -1,6 +1,8 @@
 #ifndef GUI_NODE_WIDGET_WIDGET_ROSOUT_HPP
 #define GUI_NODE_WIDGET_WIDGET_ROSOUT_HPP
 
+#pragma once
+
 #include <boost/circular_buffer.hpp>
 #include <imgui.h>
 #include <map>
@@ -15,6 +17,9 @@
 namespace gui_node
 {
 
+/**
+ * Widget for displaying ROS log messages.
+ */
 class WidgetRosout : public Widget
 {
 private:

@@ -148,13 +148,13 @@ add_library(gui_node_sample_video_subscribe SHARED
     src/samples/video_subscriber_node.cpp
     src/gui_node.cpp
     src/gui_engine.cpp
+    src/widget/widget_video.cpp
     ${IMGUI_SOURCES}
 )
 
 target_link_libraries(gui_node_sample_video_subscribe
     glfw
     Vulkan::Vulkan
-    ${OpenCV_LIBS}
 )
 
 ament_target_dependencies(gui_node_sample_video_subscribe

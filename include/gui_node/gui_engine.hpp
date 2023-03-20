@@ -306,6 +306,13 @@ public:
      * @return The height of the texture.
      */
     int getHeight() { return height; }
+
+    /**
+     * Updates the texture with provided image data.
+     *
+     * @param image_data Vector of the image data.
+     */
+    void updateTexture(std::vector<unsigned char> image_data);
 };
 
 class GuiEngine : public std::enable_shared_from_this<GuiEngine>

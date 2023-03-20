@@ -1194,6 +1194,13 @@ void TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     checkVulkanResult(result, node->get_logger(), "Failed to wait for device to become idle!");
 }
 
+void TextureLoader::updateTexture(std::vector<unsigned char> image_data)
+{
+    this->image_data = image_data;
+    uploadToBuffer();
+    recordCommandBuffer(gui_engine->getCommandPool(), gui_engine->getGraphicsQueue());
+}
+
 TextureLoader::~TextureLoader() { ImGui_ImplVulkan_RemoveTexture(descriptor_set); }
 
 } // namespace gui_node
