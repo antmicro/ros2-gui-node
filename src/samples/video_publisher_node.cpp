@@ -16,6 +16,9 @@
 namespace gui_node
 {
 
+using RosImagePublisherData = RosPublisherData<sensor_msgs::msg::Image, cv::Mat>;
+using RosImagePublisherDataSharedPtr = std::shared_ptr<RosImagePublisherData>;
+
 class VideoPublisher
 {
 private:
@@ -61,27 +64,27 @@ public:
         }
 
         // Create a ROS publisher
-        auto publisherCallback = [this](const cv::Mat &frame) -> sensor_msgs::msg::Image
-        {
-            if (frame.empty())
+        RosImagePublisherDataSharedPtr publisher = std::make_shared<RosImagePublisherData>(
+            gui_node_ptr, topic,
+            [this](const cv::Mat &frame) -> sensor_msgs::msg::Image
             {
-                RCLCPP_ERROR(gui_node_ptr->get_logger(), "Frame is empty");
-                return sensor_msgs::msg::Image();
-            }
+                if (frame.empty())
+                {
+                    RCLCPP_ERROR(gui_node_ptr->get_logger(), "Frame is empty");
+                    return sensor_msgs::msg::Image();
+                }
+                sensor_msgs::msg::Image msg = sensor_msgs::msg::Image();
+                msg.header.stamp = rclcpp::Clock().now();
+                msg.header.frame_id = "camera";
+                msg.height = frame.rows;
+                msg.width = frame.cols;
+                msg.encoding = mat_type2encoding(frame.type());
+                msg.is_bigendian = false;
+                msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
+                msg.data.assign(frame.datastart, frame.dataend);
+                return msg;
+            });
 
-            sensor_msgs::msg::Image msg = sensor_msgs::msg::Image();
-            msg.header.stamp = rclcpp::Clock().now();
-            msg.header.frame_id = "camera";
-            msg.height = frame.rows;
-            msg.width = frame.cols;
-            msg.encoding = mat_type2encoding(frame.type());
-            msg.is_bigendian = false;
-            msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
-            msg.data.assign(frame.datastart, frame.dataend);
-            return msg;
-        };
-        auto publisher = std::make_shared<RosPublisherData<sensor_msgs::msg::Image, cv::Mat>>(gui_node_ptr, topic,
-                                                                                              publisherCallback);
         // Add the ROS publisher to the GUI node
         gui_node_ptr->addRosData(ros_data_name, publisher);
 
@@ -114,8 +117,8 @@ public:
             video_capture >> frame;
             // Convert to RGBA
             cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
-            auto pub =
-                this->gui_node_ptr->getRosData(ros_data_name)->as<RosPublisherData<sensor_msgs::msg::Image, cv::Mat>>();
+            RosImagePublisherDataSharedPtr pub =
+                this->gui_node_ptr->getRosData(ros_data_name)->as<RosImagePublisherData>();
             pub->publish(frame);
         }
     }

@@ -88,7 +88,3 @@ std::shared_ptr<GuiEngine> GuiNode::getGuiEngine()
 }
 
 } // namespace gui_node
-
-#include "rclcpp_components/register_node_macro.hpp"
-
-RCLCPP_COMPONENTS_REGISTER_NODE(gui_node::GuiNode)

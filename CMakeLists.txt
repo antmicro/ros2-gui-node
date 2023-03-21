@@ -46,19 +46,27 @@ set(IMGUI_SOURCES
 add_compile_definitions(GLFW_INCLUDE_VULKAN)
 
 #######################
-# Publish node
+# GuiNode library
 #######################
-add_library(gui_node_sample_publisher SHARED
-    src/samples/publisher_node.cpp
+add_library(gui_node SHARED
     src/gui_node.cpp
     src/gui_engine.cpp
     ${IMGUI_SOURCES}
 )
 
-target_link_libraries(gui_node_sample_publisher
+target_link_libraries(gui_node
     glfw
     Vulkan::Vulkan
 )
+
+ament_target_dependencies(gui_node rclcpp)
+
+#######################
+# Time publisher node
+#######################
+add_library(gui_node_sample_publisher SHARED src/samples/string_publisher_node.cpp)
+
+target_link_libraries(gui_node_sample_publisher gui_node)
 
 ament_target_dependencies(gui_node_sample_publisher
     rclcpp
@@ -66,22 +74,14 @@ ament_target_dependencies(gui_node_sample_publisher
     std_msgs
 )
 
-rclcpp_components_register_nodes(gui_node_sample_publisher "gui_node::TimePublisher")
+rclcpp_components_register_nodes(gui_node_sample_publisher "gui_node::StringPublisher")
 
 #######################
-# Subscribe node
+# Time subscriber node
 #######################
-add_library(gui_node_sample_subscriber SHARED
-    src/samples/subscriber_node.cpp
-    src/gui_node.cpp
-    src/gui_engine.cpp
-    ${IMGUI_SOURCES}
-)
+add_library(gui_node_sample_subscriber SHARED src/samples/string_subscriber_node.cpp)
 
-target_link_libraries(gui_node_sample_subscriber
-    glfw
-    Vulkan::Vulkan
-)
+target_link_libraries(gui_node_sample_subscriber gui_node)
 
 ament_target_dependencies(gui_node_sample_subscriber
     rclcpp
@@ -89,23 +89,17 @@ ament_target_dependencies(gui_node_sample_subscriber
     std_msgs
 )
 
-rclcpp_components_register_nodes(gui_node_sample_subscriber "gui_node::TimeSubscriber")
+rclcpp_components_register_nodes(gui_node_sample_subscriber "gui_node::StringSubscriber")
 
 #######################
 # Rosout node
 #######################
 add_library(gui_node_sample_rosout SHARED
     src/samples/rosout_subscriber_node.cpp
-    src/gui_node.cpp
-    src/gui_engine.cpp
     src/widget/widget_rosout.cpp
-    ${IMGUI_SOURCES}
 )
 
-target_link_libraries(gui_node_sample_rosout
-    glfw
-    Vulkan::Vulkan
-)
+target_link_libraries(gui_node_sample_rosout gui_node)
 
 ament_target_dependencies(gui_node_sample_rosout
     rclcpp
@@ -113,23 +107,18 @@ ament_target_dependencies(gui_node_sample_rosout
     rcl_interfaces
 )
 
-rclcpp_components_register_nodes(gui_node_sample_rosout "gui_node::RosoutSubscriberNode")
-set(node_plugins "${gui_node_sample_rosout}gui_node::RosoutSubscriberNode;$<TARGET_FILE:rosout_subscriber_node>\n")
+rclcpp_components_register_nodes(gui_node_sample_rosout "gui_node::RosoutSubscriber")
 
 #######################
 # Video publisher node
 #######################
 add_library(gui_node_sample_video_publish SHARED
     src/samples/video_publisher_node.cpp
-    src/gui_node.cpp
-    src/gui_engine.cpp
     src/widget/widget_video.cpp
-    ${IMGUI_SOURCES}
 )
 
 target_link_libraries(gui_node_sample_video_publish
-    glfw
-    Vulkan::Vulkan
+    gui_node
     ${OpenCV_LIBS}
 )
 
@@ -140,22 +129,17 @@ ament_target_dependencies(gui_node_sample_video_publish
 )
 
 rclcpp_components_register_nodes(gui_node_sample_video_publish "gui_node::VideoPublisher")
-set(node_plugins "${gui_node_sample_rosout}gui_node::VideoPublisher;$<TARGET_FILE:video_publisher_node>\n")
 
 #######################
 # Video subscriber node
 #######################
 add_library(gui_node_sample_video_subscribe SHARED
     src/samples/video_subscriber_node.cpp
-    src/gui_node.cpp
-    src/gui_engine.cpp
     src/widget/widget_video.cpp
-    ${IMGUI_SOURCES}
 )
 
 target_link_libraries(gui_node_sample_video_subscribe
-    glfw
-    Vulkan::Vulkan
+    gui_node
     ${OpenCV_LIBS}
 )
 
@@ -166,12 +150,12 @@ ament_target_dependencies(gui_node_sample_video_subscribe
 )
 
 rclcpp_components_register_nodes(gui_node_sample_video_subscribe "gui_node::VideoSubscriber")
-set(node_plugins "${gui_node_sample_video_subscribe}gui_node::VideoSubscriber;$<TARGET_FILE:video_subscriber_node>\n")
 
 #######################
 # Install
 #######################
 install(TARGETS
+    gui_node
     gui_node_sample_publisher
     gui_node_sample_subscriber
     gui_node_sample_rosout

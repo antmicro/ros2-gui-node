@@ -7,8 +7,8 @@
 namespace gui_node
 {
 
-WidgetRosout::WidgetRosout(std::shared_ptr<GuiNode> gui_node_ptr, const std::string &ros_data_name,
-                           const std::string &window_name, int max_table_size)
+WidgetRosout::WidgetRosout(std::shared_ptr<GuiNode> gui_node_ptr, const std::string &window_name,
+                           const std::string &ros_data_name, int max_table_size)
     : Widget(gui_node_ptr), ros_data_name(ros_data_name), window_name(window_name),
       messages(boost::circular_buffer<rosout_message>(max_table_size))
 {

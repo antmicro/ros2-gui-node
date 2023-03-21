@@ -7,31 +7,33 @@
 namespace gui_node
 {
 
-class RosoutSubscriberNode
+using RosRosoutSubscriberData = RosSubscriberData<rcl_interfaces::msg::Log, rcl_interfaces::msg::Log::SharedPtr>;
+using RosRosoutSubscriberDataSharedPtr = std::shared_ptr<RosRosoutSubscriberData>;
+using MsgRosoutSharedPtr = rcl_interfaces::msg::Log::SharedPtr;
+
+class RosoutSubscriber
 {
 private:
-    rclcpp::TimerBase::SharedPtr timer_;
-    std::shared_ptr<GuiNode> gui_node_ptr;
+    std::shared_ptr<GuiNode> gui_node_ptr; ///< Pointer to the GUI node
 
 public:
-    RosoutSubscriberNode(const rclcpp::NodeOptions &options)
+    RosoutSubscriber(const rclcpp::NodeOptions &options)
     {
-        using SubscriberType = RosSubscriberData<rcl_interfaces::msg::Log, rcl_interfaces::msg::Log::SharedPtr>;
         gui_node_ptr = std::make_shared<GuiNode>(options, "gui_node");
         std::string ros_data_name = "rosout_subscriber";
+        std::string window_name = "[Sub] /rosout";
+        std::string topic = "/rosout";
 
         // Adds a subscriber to the node
-        auto subscriber_callback =
-            [](const rcl_interfaces::msg::Log::SharedPtr msg) -> rcl_interfaces::msg::Log::SharedPtr { return msg; };
-        std::shared_ptr<SubscriberType> subscriber =
-            std::make_shared<SubscriberType>(gui_node_ptr, "/rosout", subscriber_callback);
+        RosRosoutSubscriberDataSharedPtr subscriber = std::make_shared<RosRosoutSubscriberData>(
+            gui_node_ptr, topic, [](const MsgRosoutSharedPtr msg) -> MsgRosoutSharedPtr { return msg; });
         gui_node_ptr->addRosData(ros_data_name, subscriber);
 
         // Adds a subscriber widget to the GUI
         std::shared_ptr<WidgetRosout> subscriber_widget =
-            std::make_shared<WidgetRosout>(gui_node_ptr, ros_data_name, "[Sub] /rosout log", 10);
-        gui_node_ptr->addWidget("rosout_widget", subscriber_widget);
-        gui_node_ptr->prepare("[Sub] /rosout");
+            std::make_shared<WidgetRosout>(gui_node_ptr, window_name, ros_data_name, 10);
+        gui_node_ptr->addWidget(ros_data_name, subscriber_widget);
+        gui_node_ptr->prepare(window_name);
     }
 
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface()
@@ -44,4 +46,4 @@ public:
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(gui_node::RosoutSubscriberNode)
+RCLCPP_COMPONENTS_REGISTER_NODE(gui_node::RosoutSubscriber)

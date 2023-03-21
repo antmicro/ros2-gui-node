@@ -12,7 +12,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='gui_node',
-                plugin='gui_node::TimePublisher',
+                plugin='gui_node::StringPublisher',
                 name='time_publisher')
         ],
         output='both',
@@ -26,7 +26,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='gui_node',
-                plugin='gui_node::TimeSubscriber',
+                plugin='gui_node::StringSubscriber',
                 name='gui_subscriber')
         ],
         output='both',

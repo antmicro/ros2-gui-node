@@ -61,11 +61,11 @@ public:
      * Constructor.
      *
      * @param gui_node Pointer to the GUI node the widget is associated with.
-     * @param ros_data_name Name of the RosData object that is used to subscribe to the ROS topic.
      * @param window_name Name of the ImGui window.
+     * @param ros_data_name Name of the RosData object that is used to subscribe to the ROS topic.
      * @param max_table_size Maximum number of messages to store in the table.
      */
-    WidgetRosout(std::shared_ptr<GuiNode> gui_node, const std::string &ros_data_name, const std::string &window_name,
+    WidgetRosout(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
                  int max_table_size);
 
     /**

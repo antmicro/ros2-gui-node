@@ -9,6 +9,9 @@
 namespace gui_node
 {
 
+using MsgImageSharedPtr = sensor_msgs::msg::Image::SharedPtr;
+using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
+
 class VideoSubscriber
 {
 private:
@@ -18,19 +21,20 @@ public:
     VideoSubscriber(const rclcpp::NodeOptions &options)
     {
         gui_node_ptr = std::make_shared<GuiNode>(options, "gui_node");
+        std::string ros_data_name = "video_subscriber";
+        std::string window_name = "[Sub] Video";
+        std::string topic = "video";
 
         // Create a ROS subscriber data object
-        auto subscriber =
-            std::make_shared<RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>>(
-                gui_node_ptr, "video", [](const sensor_msgs::msg::Image::SharedPtr msg) { return msg; });
-        std::string ros_data_name = "video_subscriber";
+        std::shared_ptr<RosImageSubscriberData> subscriber = std::make_shared<RosImageSubscriberData>(
+            gui_node_ptr, topic, [](const MsgImageSharedPtr msg) -> MsgImageSharedPtr { return msg; });
         gui_node_ptr->addRosData(ros_data_name, subscriber);
 
         // Create a widget to display the video
         std::shared_ptr<WidgetVideoMsg> widget =
-            std::make_shared<WidgetVideoMsg>(gui_node_ptr, "[Sub] Video subscriber", ros_data_name);
+            std::make_shared<WidgetVideoMsg>(gui_node_ptr, window_name, ros_data_name);
         gui_node_ptr->addWidget(ros_data_name, widget);
-        gui_node_ptr->prepare("[Sub] Video subscriber");
+        gui_node_ptr->prepare(window_name);
     }
 
     ~VideoSubscriber() {}
