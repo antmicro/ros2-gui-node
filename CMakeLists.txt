@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 20)
 project(gui_node VERSION 0.0.1)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -15,18 +17,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenCV REQUIRED)
-
-if(BUILD_TESTING)
-    find_package(ament_lint_auto REQUIRED)
-    # the following line skips the linter which checks for copyrights
-    # comment the line when a copyright and license is added to all source files
-    set(ament_cmake_copyright_FOUND TRUE)
-    # the following line skips cpplint (only works in a git repo)
-    # comment the line when this package is in a git repo and when
-    # a copyright and license is added to all source files
-    set(ament_cmake_cpplint_FOUND TRUE)
-    ament_lint_auto_find_test_dependencies()
-endif()
 
 include_directories(include
     third-party/imgui
@@ -123,10 +113,20 @@ install (FILES launch/sample_launch.py
     DESTINATION share/${PROJECT_NAME}
 )
 
-add_custom_target(format
-    COMMAND bash -c "find ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include -iname \"*.cpp\" -o -iname \"*.hpp\" | xargs clang-tidy -format-style=file -p ${CMAKE_BINARY_DIR} -fix"
-    COMMAND bash -c "find ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include -iname \"*.cpp\" -o -iname \"*.hpp\" | xargs clang-format --style=file -i"
-    VERBATIM
-)
+if(BUILD_TESTING)
+    find_package(ament_cmake_clang_format REQUIRED)
+    find_package(ament_cmake_clang_tidy REQUIRED)
+
+    ament_clang_format(CONFIG_FILE ".clang-format"
+        "include"
+        "src"
+    )
+
+    ament_clang_tidy(CONFIG_FILE ".clang-format"
+        ${CMAKE_BINARY_DIR}/compile_commands.json
+        "include"
+        "src"
+    )
+endif()
 
 ament_package()
