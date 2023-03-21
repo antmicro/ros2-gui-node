@@ -11,14 +11,49 @@ namespace gui_node
 {
 
 /**
+ * Configuration parameters for the ImGui window.
+ */
+struct WindowConfigs
+{
+    float aspect_ratio; ///< The aspect ratio of the window
+    ImVec2 offset;      ///< The offset of the window
+    ImVec2 window_size; ///< The size of the window
+};
+
+/**
  * Base class for video widgets.
  */
 class WidgetVideoBase : public Widget
 {
 protected:
-    const std::string window_name;       ///< The name of the ImGui window
-    const std::string ros_data_name;     ///< The name of the ROS data, used as a name for the TextureLoader
-    bool is_texture_initialized = false; ///< Whether the texture has been initialized
+    /**
+     * Resize callback for the ImGui window.
+     * Sets the size of the video widget with respect to the window aspect ratio.
+     *
+     * @param configs Pointer to the ImGui callback data.
+     */
+    static void resizeCallback(ImGuiSizeCallbackData *data);
+
+    /**
+     * Calculates the aspect ratio for the ImGui window based on the provided parameters.
+     * Calculates the offset for the ImGui window based on the ImGui style.
+     *
+     * @param width Width of the video widget.
+     * @param height Height of the video widget.
+     * @return WindowConfigs struct containing the calculated aspect ratio and offset.
+     */
+    WindowConfigs getWindowConfigs(int width, int height);
+
+    /**
+     * Draws the ImGui window with Image from the provided texture.
+     *
+     * @param texture_loader Pointer to the texture loader.
+     */
+    void drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader);
+
+    const std::string window_name;    ///< The name of the ImGui window
+    const std::string ros_data_name;  ///< The name of the ROS data, used as a name for the TextureLoader
+    bool texture_initialized = false; ///< Whether the texture has been initialized
 
 public:
     /**
