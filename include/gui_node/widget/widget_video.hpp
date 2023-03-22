@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "gui_node/widget/widget.hpp"
 
@@ -13,7 +14,7 @@ namespace gui_node
 /**
  * Configuration parameters for the ImGui window.
  */
-struct WindowConfigs
+struct WindowConfig
 {
     float aspect_ratio; ///< The aspect ratio of the window
     ImVec2 offset;      ///< The offset of the window
@@ -40,9 +41,20 @@ protected:
      *
      * @param width Width of the video widget.
      * @param height Height of the video widget.
-     * @return WindowConfigs struct containing the calculated aspect ratio and offset.
+     * @return WindowConfig struct containing the calculated aspect ratio and offset.
      */
-    WindowConfigs getWindowConfigs(int width, int height);
+    WindowConfig getWindowConfig(int width, int height);
+
+    /**
+     * Updates the TextureLoader with the new image if the image has changed.
+     * If the texture was not initialized, this method will initialize it.
+     *
+     * @param buffer Vector containing the image data.
+     * @param width Width of the image.
+     * @param height Height of the image.
+     * @param channels Number of channels in the image.
+     */
+    void updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels);
 
     /**
      * Draws the ImGui window with Image from the provided texture.
@@ -51,9 +63,10 @@ protected:
      */
     void drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader);
 
-    const std::string window_name;    ///< The name of the ImGui window
-    const std::string ros_data_name;  ///< The name of the ROS data, used as a name for the TextureLoader
-    bool texture_initialized = false; ///< Whether the texture has been initialized
+    const std::string window_name;              ///< The name of the ImGui window
+    const std::string ros_data_name;            ///< The name of the ROS data, used as a name for the TextureLoader
+    bool texture_initialized = false;           ///< Whether the texture has been initialized
+    std::vector<unsigned char> last_image_data; ///< The last image data received
 
 public:
     /**

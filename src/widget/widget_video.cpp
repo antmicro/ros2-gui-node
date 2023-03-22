@@ -2,6 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <vector>
 
 #include "gui_node/ros_data/ros_publisher_data.hpp"
 #include "gui_node/ros_data/ros_subscriber_data.hpp"
@@ -29,17 +30,15 @@ void WidgetVideoMsg::draw()
     std::shared_ptr<RosImageSubscriberData> subscriber =
         gui_node->getRosData(ros_data_name)->as<RosImageSubscriberData>();
 
-    sensor_msgs::msg::Image::SharedPtr msg = subscriber->getData();
-    if (msg)
+    if (subscriber->hasDataChanged())
+    {
+        sensor_msgs::msg::Image::SharedPtr msg = subscriber->getData();
+        updateTexture(msg->data, msg->width, msg->height, encoding2channels(msg->encoding));
+    }
+    else if (texture_initialized)
     {
         std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
-        if (!texture_initialized)
-        {
-            gui_engine->addTexture(ros_data_name, msg->data, msg->width, msg->height, encoding2channels(msg->encoding));
-            texture_initialized = true;
-        }
         std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
-        texture_loader->updateTexture(msg->data);
         drawImGuiFrame(texture_loader);
     }
 }
@@ -48,24 +47,47 @@ void WidgetVideoCVMat::draw()
 {
     using RosCVMatPublisherData = RosPublisherData<sensor_msgs::msg::Image, cv::Mat>;
     std::shared_ptr<RosCVMatPublisherData> publisher = gui_node->getRosData(ros_data_name)->as<RosCVMatPublisherData>();
-    cv::Mat image = publisher->getData();
-    if (!image.empty())
+    if (publisher->hasDataChanged())
+    {
+        cv::Mat image = publisher->getData();
+        if (image.empty())
+        {
+            RCLCPP_WARN(gui_node->get_logger(), "Empty image");
+        }
+        else
+        {
+            int channels = image.channels();
+            std::vector<unsigned char> buffer(image.data, image.data + image.total() * channels);
+            updateTexture(buffer, image.cols, image.rows, channels);
+        }
+    }
+    else if (texture_initialized)
     {
         std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
-        int channels = image.channels();
-        std::vector<unsigned char> buffer(image.data, image.data + image.total() * channels);
-        if (!texture_initialized)
-        {
-            gui_engine->addTexture(ros_data_name, buffer, image.cols, image.rows, channels);
-            texture_initialized = true;
-        }
         std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
-        texture_loader->updateTexture(buffer);
         drawImGuiFrame(texture_loader);
     }
 }
 
-WindowConfigs WidgetVideoBase::getWindowConfigs(int width, int height)
+void WidgetVideoBase::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
+{
+    std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
+    if (!texture_initialized)
+    {
+        gui_engine->addTexture(ros_data_name, buffer, width, height, channels);
+        last_image_data = buffer;
+        texture_initialized = true;
+    }
+    std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
+    if (buffer != last_image_data)
+    {
+        texture_loader->updateTexture(buffer);
+        last_image_data = buffer;
+    }
+    drawImGuiFrame(texture_loader);
+}
+
+WindowConfig WidgetVideoBase::getWindowConfig(int width, int height)
 {
     ImGuiStyle &style = ImGui::GetStyle();
     // ImGui doesn't provide method to set window content size, so content area is smaller than the image.
@@ -75,12 +97,12 @@ WindowConfigs WidgetVideoBase::getWindowConfigs(int width, int height)
     float aspect_ratio = round((float)width / (float)height * 10) / 10;
     ImVec2 offset = ImVec2(style.WindowPadding.x * 2, style.WindowPadding.y * 2 + title_bar_size);
     ImVec2 window_size = ImVec2(width + offset.x, width / aspect_ratio + offset.y);
-    return WindowConfigs{aspect_ratio, offset, window_size};
+    return WindowConfig{aspect_ratio, offset, window_size};
 }
 
 void WidgetVideoBase::resizeCallback(ImGuiSizeCallbackData *data)
 {
-    struct WindowConfigs configs = *(struct WindowConfigs *)data->UserData;
+    struct WindowConfig configs = *(struct WindowConfig *)data->UserData;
     float diffx = data->CurrentSize.x - data->DesiredSize.x;
     float diffy = data->CurrentSize.y - data->DesiredSize.y;
     int diff = diffx + diffy;
@@ -98,7 +120,7 @@ void WidgetVideoBase::resizeCallback(ImGuiSizeCallbackData *data)
 
 void WidgetVideoBase::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
 {
-    WindowConfigs window_configs = getWindowConfigs(texture_loader->getWidth(), texture_loader->getHeight());
+    WindowConfig window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), resizeCallback,
                                         (void *)&window_configs);
     ImGui::Begin(window_name.c_str(), NULL, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
