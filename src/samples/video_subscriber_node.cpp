@@ -31,8 +31,8 @@ public:
         gui_node_ptr->addRosData(ros_data_name, subscriber);
 
         // Create a widget to display the video
-        std::shared_ptr<WidgetVideoMsg> widget =
-            std::make_shared<WidgetVideoMsg>(gui_node_ptr, window_name, ros_data_name);
+        std::shared_ptr<MsgVideoWidget> widget =
+            std::make_shared<MsgVideoWidget>(gui_node_ptr, window_name, ros_data_name);
         gui_node_ptr->addWidget(ros_data_name, widget);
         gui_node_ptr->prepare(window_name);
     }

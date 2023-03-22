@@ -17,16 +17,12 @@ using RosStringPublisherDataSharedPtr = std::shared_ptr<RosStringPublisherData>;
 /**
  * Widget for displaying published date and time.
  */
-class WidgetStringPublisher : public Widget
+class StringPublisherWidget : public Widget
 {
-private:
-    std::string ros_data_name; ///< Name of the ROS data
-    std::string window_name;   ///< Name of the ImGui window
-
 public:
-    WidgetStringPublisher(std::shared_ptr<GuiNode> gui_node, const std::string &ros_data_name,
-                          const std::string &window_name)
-        : Widget(gui_node), ros_data_name(ros_data_name), window_name(window_name)
+    StringPublisherWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name,
+                          const std::string &ros_data_name)
+        : Widget(gui_node, window_name, ros_data_name)
     {
     }
 
@@ -83,8 +79,8 @@ public:
             });
 
         // Adds widget for displaying the date and time
-        std::shared_ptr<WidgetStringPublisher> widget =
-            std::make_shared<WidgetStringPublisher>(gui_node_ptr, ros_data_name, window_name);
+        std::shared_ptr<StringPublisherWidget> widget =
+            std::make_shared<StringPublisherWidget>(gui_node_ptr, window_name, ros_data_name);
         gui_node_ptr->addWidget(ros_data_name, widget);
         gui_node_ptr->prepare(window_name);
     }

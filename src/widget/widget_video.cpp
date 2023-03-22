@@ -11,7 +11,7 @@
 
 namespace gui_node
 {
-int WidgetVideoMsg::encoding2channels(const std::string &encoding)
+int MsgVideoWidget::encoding2channels(const std::string &encoding)
 {
     if (encoding == "rgba8")
     {
@@ -19,12 +19,11 @@ int WidgetVideoMsg::encoding2channels(const std::string &encoding)
     }
     else
     {
-        RCLCPP_FATAL(gui_node->get_logger(), "Unsupported encoding: %s", encoding.c_str());
-        throw std::invalid_argument("Unsupported encoding: " + encoding);
+        return -1;
     }
 }
 
-void WidgetVideoMsg::draw()
+void MsgVideoWidget::draw()
 {
     using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
     std::shared_ptr<RosImageSubscriberData> subscriber =
@@ -33,7 +32,13 @@ void WidgetVideoMsg::draw()
     if (subscriber->hasDataChanged())
     {
         sensor_msgs::msg::Image::SharedPtr msg = subscriber->getData();
-        updateTexture(msg->data, msg->width, msg->height, encoding2channels(msg->encoding));
+        int channels = encoding2channels(msg->encoding);
+        if (channels == -1)
+        {
+            RCLCPP_ERROR(gui_node->get_logger(), "Unsupported encoding: %s", msg->encoding.c_str());
+            return;
+        }
+        updateTexture(msg->data, msg->width, msg->height, channels);
     }
     else if (texture_initialized)
     {
@@ -43,7 +48,7 @@ void WidgetVideoMsg::draw()
     }
 }
 
-void WidgetVideoCVMat::draw()
+void CVMatVideoWidget::draw()
 {
     using RosCVMatPublisherData = RosPublisherData<sensor_msgs::msg::Image, cv::Mat>;
     std::shared_ptr<RosCVMatPublisherData> publisher = gui_node->getRosData(ros_data_name)->as<RosCVMatPublisherData>();
@@ -69,7 +74,7 @@ void WidgetVideoCVMat::draw()
     }
 }
 
-void WidgetVideoBase::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
+void BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
 {
     std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
     if (!texture_initialized)
@@ -87,7 +92,7 @@ void WidgetVideoBase::updateTexture(const std::vector<unsigned char> &buffer, in
     drawImGuiFrame(texture_loader);
 }
 
-WindowConfig WidgetVideoBase::getWindowConfig(int width, int height)
+WindowConfig BaseVideoWidget::getWindowConfig(int width, int height)
 {
     ImGuiStyle &style = ImGui::GetStyle();
     // ImGui doesn't provide method to set window content size, so content area is smaller than the image.
@@ -100,7 +105,7 @@ WindowConfig WidgetVideoBase::getWindowConfig(int width, int height)
     return WindowConfig{aspect_ratio, offset, window_size};
 }
 
-void WidgetVideoBase::resizeCallback(ImGuiSizeCallbackData *data)
+void BaseVideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
 {
     struct WindowConfig configs = *(struct WindowConfig *)data->UserData;
     float diffx = data->CurrentSize.x - data->DesiredSize.x;
@@ -118,7 +123,7 @@ void WidgetVideoBase::resizeCallback(ImGuiSizeCallbackData *data)
     }
 }
 
-void WidgetVideoBase::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
+void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
 {
     WindowConfig window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), resizeCallback,

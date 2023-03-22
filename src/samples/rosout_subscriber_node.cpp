@@ -30,8 +30,8 @@ public:
         gui_node_ptr->addRosData(ros_data_name, subscriber);
 
         // Adds a subscriber widget to the GUI
-        std::shared_ptr<WidgetRosout> subscriber_widget =
-            std::make_shared<WidgetRosout>(gui_node_ptr, window_name, ros_data_name, 10);
+        std::shared_ptr<RosoutWidget> subscriber_widget =
+            std::make_shared<RosoutWidget>(gui_node_ptr, window_name, ros_data_name, 10);
         gui_node_ptr->addWidget(ros_data_name, subscriber_widget);
         gui_node_ptr->prepare(window_name);
     }

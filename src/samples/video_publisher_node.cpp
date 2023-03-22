@@ -89,8 +89,8 @@ public:
         gui_node_ptr->addRosData(ros_data_name, publisher);
 
         // Create a video publisher widget
-        std::shared_ptr<WidgetVideoCVMat> widget =
-            std::make_shared<WidgetVideoCVMat>(gui_node_ptr, window_name, ros_data_name);
+        std::shared_ptr<CVMatVideoWidget> widget =
+            std::make_shared<CVMatVideoWidget>(gui_node_ptr, window_name, ros_data_name);
 
         // Add the widget to the GUI node
         gui_node_ptr->addWidget(ros_data_name, widget);

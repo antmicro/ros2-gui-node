@@ -1,11 +1,11 @@
-#ifndef GUI_NODE_WIDGET_WIDGET_HPP
-#define GUI_NODE_WIDGET_WIDGET_HPP
+#pragma once
 
-#include "gui_node/gui_engine.hpp"
-#include "gui_node/gui_node.hpp"
 #include <functional>
 #include <memory>
 #include <string>
+
+#include "gui_node/gui_engine.hpp"
+#include "gui_node/gui_node.hpp"
 
 namespace gui_node
 {
@@ -19,14 +19,21 @@ class Widget
 {
 protected:
     std::shared_ptr<GuiNode> gui_node; ///< The GUI node that this widget is attached to
+    std::string window_name;           ///< The name of the widget's window
+    std::string ros_data_name;         ///< The name of the ROS data that this widget is displaying
 
 public:
     /**
      * Constructor.
      *
-     * @param gui_node The GUI node that this widget is attached to
+     * @param gui_node The GUI node that this widget is attached to.
+     * @param window_name The name of the widget's window.
+     * @param ros_data_name The name of the ROS data that this widget is displaying.
      */
-    Widget(std::shared_ptr<GuiNode> gui_node) : gui_node(gui_node) {}
+    Widget(std::shared_ptr<GuiNode> gui_node, std::string window_name, std::string ros_data_name)
+        : gui_node(gui_node), window_name(window_name), ros_data_name(ros_data_name)
+    {
+    }
 
     /**
      * Destructor.
@@ -40,4 +47,3 @@ public:
 };
 
 } // namespace gui_node
-#endif // GUI_NODE_WIDGET_WIDGET_HPP

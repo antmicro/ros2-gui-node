@@ -17,16 +17,12 @@ using RosStringSubscriberSharedPtr = std::shared_ptr<RosStringSubscriberData>;
 /**
  * Widget for displaying the current date and time.
  */
-class WidgetStringSubscriber : public Widget
+class StringSubscriberWidget : public Widget
 {
-private:
-    const std::string ros_data_name; ///< Name of the ROS data associated with this widget
-    const std::string window_name;   ///< Name for the ImGui window
-
 public:
-    WidgetStringSubscriber(std::shared_ptr<GuiNode> gui_node, const std::string &ros_data_name,
-                           const std::string &window_name)
-        : Widget(gui_node), ros_data_name(ros_data_name), window_name(window_name)
+    StringSubscriberWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name,
+                           const std::string &ros_data_name)
+        : Widget(gui_node, window_name, ros_data_name)
     {
     }
 
@@ -63,8 +59,8 @@ public:
         gui_node_ptr->addRosData(ros_data_name, subscriber);
 
         // Adds a subscriber widget to the GUI
-        std::shared_ptr<WidgetStringSubscriber> subscriber_widget =
-            std::make_shared<WidgetStringSubscriber>(gui_node_ptr, ros_data_name, window_name);
+        std::shared_ptr<StringSubscriberWidget> subscriber_widget =
+            std::make_shared<StringSubscriberWidget>(gui_node_ptr, window_name, ros_data_name);
         gui_node_ptr->addWidget(ros_data_name, subscriber_widget);
         gui_node_ptr->prepare(window_name);
     }
