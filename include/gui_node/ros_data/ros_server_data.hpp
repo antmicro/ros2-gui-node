@@ -26,6 +26,7 @@ private:
     void callback(typename Tmsg::Request::SharedPtr request, typename Tmsg::Response::SharedPtr response)
     {
         data = service_function(request, response);
+        data_changed = true;
     }
 
     typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server.
@@ -56,7 +57,11 @@ public:
      *
      * @return The data from the service request.
      */
-    Tdata get_data() const { return data; }
+    Tdata getData()
+    {
+        data_changed = false;
+        return data;
+    }
 };
 
 }; // namespace gui_node

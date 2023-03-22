@@ -28,6 +28,7 @@ private:
         if (result != nullptr)
         {
             data = *callback_function(result);
+            data_changed = true;
         }
     }
 
@@ -64,10 +65,10 @@ public:
         {
             if (!rclcpp::ok())
             {
-                RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+                RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
                 return;
             }
-            RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+            RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
         }
         auto future_result = client->async_send_request(
             request, std::bind(&RosServiceClientData::process_response, this, std::placeholders::_1));
@@ -78,7 +79,11 @@ public:
      *
      * @return The last received data.
      */
-    Tdata getData() { return data; }
+    Tdata getData()
+    {
+        data_changed = false;
+        return data;
+    }
 };
 
 }; // namespace gui_node

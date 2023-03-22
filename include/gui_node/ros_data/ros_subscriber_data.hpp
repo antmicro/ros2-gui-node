@@ -12,7 +12,7 @@ namespace gui_node
  * Data class supporing subscribing to a ROS2 topic and
  * processing received messages.
  *
- * @tparam Tmsg  ROS2 message type.
+ * @tparam Tmsg ROS2 message type.
  * @tparam Tdata Data type to be used for processing.
  */
 template <class Tmsg, class Tdata> class RosSubscriberData : public RosData
@@ -23,7 +23,11 @@ private:
      *
      * @param msg Message to convert to data
      */
-    void callback(const typename Tmsg::SharedPtr &msg) { data = data_function(msg); }
+    void callback(const typename Tmsg::SharedPtr &msg)
+    {
+        data = data_function(msg);
+        data_changed = true;
+    }
 
     typename rclcpp::Subscription<Tmsg>::SharedPtr subscriber;          ///< Subscriber
     std::function<Tdata(const typename Tmsg::SharedPtr)> data_function; ///< Function to convert message to data
@@ -50,7 +54,11 @@ public:
      *
      * @return The last received data
      */
-    Tdata getData() { return data; }
+    Tdata getData()
+    {
+        data_changed = false;
+        return data;
+    }
 };
 
 } // namespace gui_node

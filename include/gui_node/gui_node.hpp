@@ -45,8 +45,9 @@ class Widget;
  */
 class RosData : public std::enable_shared_from_this<RosData>
 {
-private:
-    std::shared_ptr<GuiNode> node; ///< The node that owns this data.
+protected:
+    std::shared_ptr<GuiNode> node; ///< The node that owns this data
+    bool data_changed = false;     ///< Whether the data has changed since the last update
 public:
     /**
      * Constructor.
@@ -62,6 +63,13 @@ public:
      * @return Cast RosData shared pointer to the specified type.
      */
     template <class T> std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+
+    /**
+     * Returns whether the data has changed since the last call to the data getter method.
+     *
+     * @return True if the data has changed, false otherwise.
+     */
+    bool hasDataChanged() { return data_changed; }
 
     virtual ~RosData() {}
 };

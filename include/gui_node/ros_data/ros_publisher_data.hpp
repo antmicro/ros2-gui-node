@@ -44,6 +44,7 @@ public:
     void publish(const Tdata &data_to_publish)
     {
         data = data_to_publish;
+        data_changed = true;
         auto msg = msg_function(data);
         publisher->publish(msg);
     }
@@ -53,7 +54,11 @@ public:
      *
      * @return Last published data.
      */
-    Tdata getData() { return data; }
+    Tdata getData()
+    {
+        data_changed = false;
+        return data;
+    }
 };
 
 } // namespace gui_node
