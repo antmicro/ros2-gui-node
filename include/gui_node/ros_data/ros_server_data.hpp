@@ -29,10 +29,10 @@ private:
         data_changed = true;
     }
 
-    typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server.
+    typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server
     std::function<void(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)>
-        service_function; ///< The service function to process requests.
-    Tdata data;           ///< The data from the service request.
+        service_function; ///< The service function to process requests
+    Tdata data;           ///< The data from the service request
 public:
     /**
      * Constructor.

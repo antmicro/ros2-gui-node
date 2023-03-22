@@ -9,7 +9,7 @@ namespace gui_node
 {
 
 /**
- * Data class supporing subscribing to a ROS2 topic and
+ * Data class supporting subscribing to a ROS2 topic and
  * processing received messages.
  *
  * @tparam Tmsg ROS2 message type.
@@ -19,9 +19,9 @@ template <class Tmsg, class Tdata> class RosSubscriberData : public RosData
 {
 private:
     /**
-     * Callback function for subscriber
+     * Callback function for subscriber.
      *
-     * @param msg Message to convert to data
+     * @param msg Message to convert to data.
      */
     void callback(const typename Tmsg::SharedPtr &msg)
     {
@@ -34,12 +34,12 @@ private:
     Tdata data;                                                         ///< Data
 public:
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param node The node to create the subscriber on
-     * @param topic The name of the topic to subscribe to
-     * @param data_function Function to convert message to data
-     * @param queue_size The size of the message queue
+     * @param node The node to create the subscriber on.
+     * @param topic The name of the topic to subscribe to.
+     * @param data_function Function to convert message to data.
+     * @param queue_size The size of the message queue.
      */
     RosSubscriberData(std::shared_ptr<GuiNode> node, const std::string &topic,
                       std::function<Tdata(const typename Tmsg::SharedPtr)> data_function, size_t queue_size = 10)
@@ -50,9 +50,9 @@ public:
     }
 
     /**
-     * Get the last received data
+     * Get the last received data.
      *
-     * @return The last received data
+     * @return The last received data.
      */
     Tdata getData()
     {

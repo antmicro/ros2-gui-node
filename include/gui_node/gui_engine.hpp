@@ -131,8 +131,8 @@ struct QueueFamilyIndices
      */
     bool isComplete() { return graphics_family.has_value() && present_family.has_value(); }
 
-    std::optional<uint32_t> graphics_family; ///< Index of graphics queue family.
-    std::optional<uint32_t> present_family;  ///< Index of present queue family.
+    std::optional<uint32_t> graphics_family; ///< Index of graphics queue family
+    std::optional<uint32_t> present_family;  ///< Index of present queue family
 };
 
 /**
@@ -248,10 +248,10 @@ private:
      */
     void recordCommandBuffer(VkCommandPoolSharedPtr command_pool, const VkQueue &graphics_queue);
 
-    int channels;                                 ///< Number of channels in the textures
-    int height;                                   ///< Height of the textures
-    int width;                                    ///< Width of the textures
-    std::shared_ptr<GuiEngine> gui_engine;        ///< Pointer to the GUI engine.
+    int channels;                                 ///< Number of channels in the texture
+    int height;                                   ///< Height of the texture
+    int width;                                    ///< Width of the texture
+    std::shared_ptr<GuiEngine> gui_engine;        ///< Pointer to the GUI engine
     std::vector<unsigned char> image_data;        ///< Data of the textures
     VkBufferUniquePtr upload_buffer;              ///< Buffer for uploading data to the GPU
     VkDescriptorSet descriptor_set;               ///< Descriptor set for the textures
@@ -289,21 +289,21 @@ public:
     /**
      * Returns the descriptor set.
      *
-     * @return The descriptor set.
+     * @return VkDescriptorSet The descriptor set.
      */
     VkDescriptorSet getDescriptorSet() { return descriptor_set; }
 
     /**
      * Returns the width of the texture.
      *
-     * @return The width of the texture.
+     * @return int The width of the texture.
      */
     int getWidth() { return width; }
 
     /**
      * Returns the height of the texture.
      *
-     * @return The height of the texture.
+     * @return int The height of the texture.
      */
     int getHeight() { return height; }
 
@@ -315,6 +315,9 @@ public:
     void updateTexture(std::vector<unsigned char> image_data);
 };
 
+/**
+ * A class for initializing and managing Vulkan objects.
+ */
 class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 {
     /**
@@ -331,7 +334,7 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
      * @param message_type Type of the message.
      * @param p_callback_data Pointer to the callback data.
      * @param p_user_data Pointer to user data.
-     * @return VK_FALSE
+     * @return VK_FALSE.
      */
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugcallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                                                         VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -418,21 +421,21 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     /**
      * Creates a Vulkan instance with GLFW extensions.
      *
-     * @throws std::runtime_error if the instance could not be created
+     * @throws std::runtime_error if the instance could not be created.
      */
     void createInstance();
 
     /**
-     * Creates a Vulkan surface for the window
+     * Creates a Vulkan surface for the window.
      *
-     * @throws std::runtime_error if the surface could not be created
+     * @throws std::runtime_error if the surface could not be created.
      */
     void createSurface();
 
     /**
-     * Creates a logical device and queues
+     * Creates a logical device and queues.
      *
-     * @throws std::runtime_error if failed to create logical device
+     * @throws std::runtime_error if failed to create logical device.
      */
     void createLogicalDevice();
 
@@ -446,56 +449,56 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     /**
      * Creates the swap chain.
      *
-     * @throws std::runtime_error if the swap chain could not be created
+     * @throws std::runtime_error if the swap chain could not be created.
      */
     void createSwapChain();
 
     /**
      * Creates the swap chain image views.
      *
-     * @throws std::runtime_error if the image views could not be created
+     * @throws std::runtime_error if the image views could not be created.
      */
     void createImageViews();
 
     /**
      * Creates the render pass.
      *
-     * @throws std::runtime_error if the render pass could not be created
+     * @throws std::runtime_error if the render pass could not be created.
      */
     void createRenderPass();
 
     /**
      * Creates the frame buffers.
      *
-     * @throws std::runtime_error if the frame buffers could not be created
+     * @throws std::runtime_error if the frame buffers could not be created.
      */
     void createFramebuffers();
 
     /**
      * Creates the command pool.
      *
-     * @throws std::runtime_error if the command pool could not be created
+     * @throws std::runtime_error if the command pool could not be created.
      */
     void createCommandPool();
 
     /**
-     * Creates a descriptor pool for the GUI
+     * Creates a descriptor pool for the GUI.
      *
-     * @throws std::runtime_error if the descriptor pool could not be created
+     * @throws std::runtime_error if the descriptor pool could not be created.
      */
     void createDescriptorPool();
 
     /**
      * Creates the command buffers.
      *
-     * @throws std::runtime_error if the command buffers could not be created
+     * @throws std::runtime_error if the command buffers could not be created.
      */
     void createCommandBuffers();
 
     /**
      * Creates the semaphores.
      *
-     * @throws std::runtime_error if the semaphores could not be created
+     * @throws std::runtime_error if the semaphores could not be created.
      */
     void createSyncObjects();
 
@@ -509,12 +512,12 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
 
     /**
-     * Initializes GLFW backend
+     * Initializes GLFW backend.
      */
     void initGLFW();
 
     /**
-     * Initializes Vulkan backend
+     * Initializes Vulkan backend.
      */
     void initVulkan();
 
@@ -574,7 +577,7 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 
 public:
     /**
-     * Constructor
+     * Constructor.
      *
      * @param application_name The name of the application window.
      * @param node The ROS2 node for the GUI.
@@ -618,7 +621,7 @@ public:
      * @param width The width of the texture.
      * @param height The height of the texture.
      * @param channels The number of channels of the texture.
-     * @return True if the texture was successfully added, false otherwise.
+     * @return bool True if the texture was successfully added, false otherwise.
      */
     bool addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height,
                     int channels);
@@ -626,7 +629,7 @@ public:
     /**
      * Get pointer to GLFW window.
      *
-     * @return GLFWwindow*
+     * @return GLFWwindow*.
      */
     GLFWwindow *getWindow() const { return window.get(); }
 
@@ -724,7 +727,7 @@ public:
      * Find the queue families of the physical device.
      *
      * @param physicalDevice The physical device to find the queue families of.
-     * @return The queue families of the physical device.
+     * @return QueueFamilyIndices The queue families of the physical device.
      */
     QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice &device);
 };

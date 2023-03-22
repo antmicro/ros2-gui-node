@@ -38,7 +38,7 @@ protected:
      *
      * @param width Width of the video widget.
      * @param height Height of the video widget.
-     * @return WindowConfig struct containing the calculated aspect ratio and offset.
+     * @return WindowConfig structure containing the calculated aspect ratio and offset.
      */
     WindowConfig getWindowConfig(int width, int height);
 
@@ -84,10 +84,10 @@ class MsgVideoWidget : public BaseVideoWidget
 {
 private:
     /**
-     * Converts an image encoding string to amount of channels
+     * Converts an image encoding string to amount of channels.
      *
-     * @param encoding The image encoding string
-     * @return The amount of channels, or -1 if the encoding is not supported
+     * @param encoding The image encoding string.
+     * @return The amount of channels, or -1 if the encoding is not supported.
      */
     int encoding2channels(const std::string &encoding);
 

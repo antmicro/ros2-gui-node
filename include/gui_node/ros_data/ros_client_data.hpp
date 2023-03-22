@@ -34,7 +34,7 @@ private:
 
     typename rclcpp::Client<Tmsg>::SharedPtr client; ///< Client of the service
     std::function<typename std::shared_ptr<Tdata>(typename std::shared_ptr<typename Tmsg::Response>)>
-        callback_function; ///< Proccesses the response from the service
+        callback_function; ///< Processes the response from the service
     Tdata data;            ///< Last received data
 
 public:

@@ -76,7 +76,7 @@ public:
 
 /**
  * Main class for GUI node.
- * Allows to create, manage and vizualize ROS2 topic publishers/subscribers
+ * Allows to create, manage and visualize ROS2 topic publishers/subscribers
  * and service servers/clients using user defined data types and callback functions.
  */
 class GuiNode : public rclcpp::Node
@@ -88,63 +88,63 @@ private:
     rclcpp::TimerBase::SharedPtr timer;                                     ///< The timer used to update the GUI
 public:
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param options Node options
-     * @param node_name Name of the node
+     * @param options Node options.
+     * @param node_name Name of the node.
      */
     GuiNode(const rclcpp::NodeOptions &options, const std::string node_name);
 
     /**
-     * Get the RosData node by name
+     * Get the RosData node by name.
      *
-     * @param node_name Name of the node
-     * @return shared_ptr<RosData> The shared pointer to the RosData node
+     * @param node_name Name of the node.
+     * @return shared_ptr<RosData> The shared pointer to the RosData node.
      *
-     * @throws RosDataException if the node with the name doesn't exist
+     * @throws RosDataException if the node with the name doesn't exist.
      */
     std::shared_ptr<RosData> &getRosData(const std::string &node_name);
 
     /**
-     * Adds a RosData node to the nodes map
+     * Adds a RosData node to the nodes map.
      *
-     * @param node_name Name of the node
-     * @param ros_data RosData node
+     * @param node_name Name of the node.
+     * @param ros_data RosData node.
      *
-     * @throws RosDataException if the node with the name already exists
+     * @throws RosDataException if the node with the name already exists.
      */
     void addRosData(const std::string &node_name, std::shared_ptr<RosData> ros_data);
 
     /**
-     * Adds a Widget to the widgets map
+     * Adds a Wdiget to the widgets map.
      *
-     * @param widget_name Name of the widget
-     * @param widget Shared pointer to the widget
+     * @param widget_name Name of the widget.
+     * @param widget Shared pointer to the widget.
      *
-     * @throws RosDataException if the widget with the name already exists
+     * @throws RosDataException if the widget with the name already exists.
      */
     void addWidget(const std::string &widget_name, std::shared_ptr<Widget> widget);
 
     /**
-     * Prepares the GuiEngine for rendering
+     * Prepares the GuiEngine for rendering.
      *
-     * @param application_name Name of the application
+     * @param application_name Name of the application.
      */
     void prepare(const std::string &application_name);
 
     /**
-     * Renders the frame using defined widgets
+     * Renders the frame using defined widgets.
      *
-     * @throws std::runtime_error if the GuiEngine is not initialized
+     * @throws std::runtime_error if the GuiEngine is not initialized.
      */
     void render();
 
     /**
-     * Get the GuiEngine
+     * Get the GuiEngine.
      *
-     * @return shared_ptr<GuiEngine> The shared pointer to the GuiEngine
+     * @return shared_ptr<GuiEngine> The shared pointer to the GuiEngine.
      *
-     * @throws std::runtime_error if the GuiEngine is not initialized
+     * @throws std::runtime_error if the GuiEngine is not initialized.
      */
     std::shared_ptr<GuiEngine> getGuiEngine();
 };
