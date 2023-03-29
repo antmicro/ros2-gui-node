@@ -4,4 +4,17 @@ from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-    return launch.LaunchDescription([])
+    sample_gui_node = ComposableNodeContainer(
+        name='sample_gui_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='gui_node',
+                plugin='gui_node::SampleGuiComponent',
+                name='sample_gui_node')
+        ],
+        output='both',
+    )
+    return launch.LaunchDescription([sample_gui_node])

@@ -62,10 +62,36 @@ target_link_libraries(gui_node
 ament_target_dependencies(gui_node rclcpp)
 
 #######################
+# SampleGuiComponent
+#######################
+add_library(sample_gui_node SHARED
+    src/samples/sample_gui_node.cpp
+    src/widget/widget_rosout.cpp
+    src/widget/widget_video.cpp
+    src/widget/widget_string.cpp
+)
+
+target_link_libraries(sample_gui_node
+    gui_node
+    ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(sample_gui_node
+    rcl_interfaces
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    std_msgs
+)
+
+rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
+
+#######################
 # Install
 #######################
 install(TARGETS
     gui_node
+    sample_gui_node
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
