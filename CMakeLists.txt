@@ -62,105 +62,10 @@ target_link_libraries(gui_node
 ament_target_dependencies(gui_node rclcpp)
 
 #######################
-# Time publisher node
-#######################
-add_library(gui_node_sample_publisher SHARED src/samples/string_publisher_node.cpp)
-
-target_link_libraries(gui_node_sample_publisher gui_node)
-
-ament_target_dependencies(gui_node_sample_publisher
-    rclcpp
-    rclcpp_components
-    std_msgs
-)
-
-rclcpp_components_register_nodes(gui_node_sample_publisher "gui_node::StringPublisher")
-
-#######################
-# Time subscriber node
-#######################
-add_library(gui_node_sample_subscriber SHARED src/samples/string_subscriber_node.cpp)
-
-target_link_libraries(gui_node_sample_subscriber gui_node)
-
-ament_target_dependencies(gui_node_sample_subscriber
-    rclcpp
-    rclcpp_components
-    std_msgs
-)
-
-rclcpp_components_register_nodes(gui_node_sample_subscriber "gui_node::StringSubscriber")
-
-#######################
-# Rosout node
-#######################
-add_library(gui_node_sample_rosout SHARED
-    src/samples/rosout_subscriber_node.cpp
-    src/widget/widget_rosout.cpp
-)
-
-target_link_libraries(gui_node_sample_rosout gui_node)
-
-ament_target_dependencies(gui_node_sample_rosout
-    rclcpp
-    rclcpp_components
-    rcl_interfaces
-)
-
-rclcpp_components_register_nodes(gui_node_sample_rosout "gui_node::RosoutSubscriber")
-
-#######################
-# Video publisher node
-#######################
-add_library(gui_node_sample_video_publish SHARED
-    src/samples/video_publisher_node.cpp
-    src/widget/widget_video.cpp
-)
-
-target_link_libraries(gui_node_sample_video_publish
-    gui_node
-    ${OpenCV_LIBS}
-)
-
-ament_target_dependencies(gui_node_sample_video_publish
-    rclcpp
-    rclcpp_components
-    sensor_msgs
-)
-
-rclcpp_components_register_nodes(gui_node_sample_video_publish "gui_node::VideoPublisher")
-
-#######################
-# Video subscriber node
-#######################
-add_library(gui_node_sample_video_subscribe SHARED
-    src/samples/video_subscriber_node.cpp
-    src/widget/widget_video.cpp
-)
-
-target_link_libraries(gui_node_sample_video_subscribe
-    gui_node
-    ${OpenCV_LIBS}
-)
-
-ament_target_dependencies(gui_node_sample_video_subscribe
-    rclcpp
-    rclcpp_components
-    sensor_msgs
-)
-
-rclcpp_components_register_nodes(gui_node_sample_video_subscribe "gui_node::VideoSubscriber")
-
-#######################
 # Install
 #######################
 install(TARGETS
     gui_node
-    gui_node_sample_publisher
-    gui_node_sample_subscriber
-    gui_node_sample_rosout
-    gui_node_sample_video_publish
-    gui_node_sample_video_subscribe
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
