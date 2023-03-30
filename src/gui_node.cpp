@@ -64,9 +64,14 @@ void GuiNode::render()
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        const int title_bar_size = ImGui::GetStyle().FramePadding.y * 2 + ImGui::GetFontSize();
         for (auto &widget : widget_map)
         {
+            ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
             widget.second->draw();
+            pos.x += title_bar_size;
+            pos.y += title_bar_size;
         }
         ImGui::Render();
         gui_engine->draw();
