@@ -87,11 +87,33 @@ ament_target_dependencies(sample_gui_node
 rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
 
 #######################
+# SamplePublisherComponent
+#######################
+add_library(sample_publish_node SHARED
+    src/samples/sample_publisher_node.cpp
+)
+
+target_link_libraries(sample_publish_node
+    gui_node
+    ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(sample_publish_node
+    rclcpp
+    rclcpp_components
+    std_msgs
+    sensor_msgs
+)
+
+rclcpp_components_register_nodes(sample_publish_node "gui_node::SamplePublisherComponent")
+
+#######################
 # Install
 #######################
 install(TARGETS
     gui_node
     sample_gui_node
+    sample_publish_node
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
