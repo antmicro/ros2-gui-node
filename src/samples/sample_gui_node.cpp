@@ -43,14 +43,21 @@ public:
         gui_node_ptr->addRosData("video_subscriber", subscriber_video);
 
         // Create a widget to display the video
-        std::shared_ptr<MsgVideoWidget> video_widget =
-            std::make_shared<MsgVideoWidget>(gui_node_ptr, "[Sub] Video stream", "video_subscriber");
+        std::shared_ptr<VideoWidget> video_widget = std::make_shared<VideoWidget>(
+            gui_node_ptr, "[Sub] Video stream", "video_subscriber",
+            [](std::shared_ptr<GuiNode> gui_node_ptr, sensor_msgs::msg::Image &msg) -> void
+            {
+                std::shared_ptr<RosImageSubscriberData> subscriber_video =
+                    gui_node_ptr->getRosData("video_subscriber")->as<RosImageSubscriberData>();
+                msg = *subscriber_video->getData().get();
+            });
         gui_node_ptr->addWidget("video_widget", video_widget);
 
         // Create a /dateandtime RosData subscriber
         std::shared_ptr<RosStringSubscriberData> subscriber_dateandtime = std::make_shared<RosStringSubscriberData>(
             gui_node_ptr, "dateandtime",
-            [](const std_msgs::msg::String::SharedPtr msg) -> std::string { return msg->data; });
+            [](const std_msgs::msg::String::SharedPtr msg) -> std::string {
+            return msg->data; });
         gui_node_ptr->addRosData("dateandtime_subscriber", subscriber_dateandtime);
 
         // Create a widget to display the date and time

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <sensor_msgs/msg/image.hpp>
 #include <vector>
 
 #include "gui_node/widget/widget.hpp"
@@ -19,9 +20,9 @@ struct WindowConfig
 };
 
 /**
- * Base class for video widgets.
+ * Class for video widgets.
  */
-class BaseVideoWidget : public Widget
+class VideoWidget : public Widget
 {
 protected:
     /**
@@ -60,29 +61,6 @@ protected:
      */
     void drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader);
 
-    bool texture_initialized = false;           ///< Whether the texture has been initialized
-    std::vector<unsigned char> last_image_data; ///< The last image data received
-
-public:
-    /**
-     * Constructor.
-     *
-     * @param gui_node The shared pointer to the GUI node for logging.
-     * @param window_name The name for the ImGui window.
-     * @param ros_data_name The name of the ROS data associated with this widget. Used as a name for the TextureLoader.
-     */
-    BaseVideoWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name)
-        : Widget(gui_node, window_name, ros_data_name)
-    {
-    }
-};
-
-/**
- * Widget for displaying a video stream from a sensor_msgs::Image message.
- */
-class MsgVideoWidget : public BaseVideoWidget
-{
-private:
     /**
      * Converts an image encoding string to amount of channels.
      *
@@ -91,40 +69,24 @@ private:
      */
     int encoding2channels(const std::string &encoding);
 
+    bool texture_initialized = false;           ///< Whether the texture has been initialized
+    std::vector<unsigned char> last_image_data; ///< The last image data received
+
+    /// The function to convert the image to a sensor_msgs::msg::Image format that can be displayed
+    std::function<void(std::shared_ptr<GuiNode>, sensor_msgs::msg::Image &)> frame_converter;
+
 public:
     /**
      * Constructor.
      *
      * @param gui_node The shared pointer to the GUI node for logging.
      * @param window_name The name for the ImGui window.
-     * @param ros_data_name The name of the ROS data associated with this widget. Used as a name for the TextureLoader.
+     * @param frame_converter The frame converter function to convert the image to a sensor_msgs::msg::Image format that
+     * can be displayed.
      */
-    MsgVideoWidget(std::shared_ptr<GuiNode> gui_node, const std::string window_name, const std::string ros_data_name)
-        : BaseVideoWidget(gui_node, window_name, ros_data_name)
-    {
-    }
-
-    /**
-     * Draws the widget.
-     */
-    void draw() override;
-};
-
-/**
- * Widget for displaying a video stream from a cv::Mat.
- */
-class CVMatVideoWidget : public BaseVideoWidget
-{
-public:
-    /**
-     * Constructor.
-     *
-     * @param gui_node The shared pointer to the GUI node for logging.
-     * @param window_name The name for the ImGui window.
-     * @param ros_data_name The name of the ROS data associated with this widget. Used as a name for the TextureLoader.
-     */
-    CVMatVideoWidget(std::shared_ptr<GuiNode> gui_node, const std::string window_name, const std::string ros_data_name)
-        : BaseVideoWidget(gui_node, window_name, ros_data_name)
+    VideoWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
+                std::function<void(std::shared_ptr<GuiNode>, sensor_msgs::msg::Image &)> frame_converter)
+        : Widget(gui_node, window_name, ros_data_name), frame_converter(frame_converter)
     {
     }
 

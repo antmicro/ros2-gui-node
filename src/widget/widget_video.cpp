@@ -1,17 +1,13 @@
 #include <memory>
-#include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vector>
 
-#include "gui_node/ros_data/ros_publisher_data.hpp"
-#include "gui_node/ros_data/ros_subscriber_data.hpp"
-#include "gui_node/widget/widget.hpp"
 #include "gui_node/widget/widget_video.hpp"
 
 namespace gui_node
 {
-int MsgVideoWidget::encoding2channels(const std::string &encoding)
+int VideoWidget::encoding2channels(const std::string &encoding)
 {
     if (encoding == "rgba8")
     {
@@ -23,22 +19,22 @@ int MsgVideoWidget::encoding2channels(const std::string &encoding)
     }
 }
 
-void MsgVideoWidget::draw()
+void VideoWidget::draw()
 {
-    using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
-    std::shared_ptr<RosImageSubscriberData> subscriber =
-        gui_node->getRosData(ros_data_name)->as<RosImageSubscriberData>();
+    std::shared_ptr<RosData> ros_data = gui_node->getRosData(ros_data_name);
 
-    if (subscriber->hasDataChanged())
+    if (ros_data->hasDataChanged())
     {
-        sensor_msgs::msg::Image::SharedPtr msg = subscriber->getData();
-        int channels = encoding2channels(msg->encoding);
+        // Create a shared pointer to the data
+        sensor_msgs::msg::Image msg = sensor_msgs::msg::Image();
+        frame_converter(gui_node, msg);
+        int channels = encoding2channels(msg.encoding);
         if (channels == -1)
         {
-            RCLCPP_ERROR(gui_node->get_logger(), "Unsupported encoding: %s", msg->encoding.c_str());
+            RCLCPP_ERROR(gui_node->get_logger(), "Unsupported encoding: %s", msg.encoding.c_str());
             return;
         }
-        updateTexture(msg->data, msg->width, msg->height, channels);
+        updateTexture(msg.data, msg.width, msg.height, channels);
     }
     else if (texture_initialized)
     {
@@ -48,33 +44,7 @@ void MsgVideoWidget::draw()
     }
 }
 
-void CVMatVideoWidget::draw()
-{
-    using RosCVMatPublisherData = RosPublisherData<sensor_msgs::msg::Image, cv::Mat>;
-    std::shared_ptr<RosCVMatPublisherData> publisher = gui_node->getRosData(ros_data_name)->as<RosCVMatPublisherData>();
-    if (publisher->hasDataChanged())
-    {
-        cv::Mat image = publisher->getData();
-        if (image.empty())
-        {
-            RCLCPP_WARN(gui_node->get_logger(), "Empty image");
-        }
-        else
-        {
-            int channels = image.channels();
-            std::vector<unsigned char> buffer(image.data, image.data + image.total() * channels);
-            updateTexture(buffer, image.cols, image.rows, channels);
-        }
-    }
-    else if (texture_initialized)
-    {
-        std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
-        std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
-        drawImGuiFrame(texture_loader);
-    }
-}
-
-void BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
+void VideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
 {
     std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
     if (!texture_initialized)
@@ -92,7 +62,7 @@ void BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, in
     drawImGuiFrame(texture_loader);
 }
 
-WindowConfig BaseVideoWidget::getWindowConfig(int width, int height)
+WindowConfig VideoWidget::getWindowConfig(int width, int height)
 {
     ImGuiStyle &style = ImGui::GetStyle();
     // ImGui doesn't provide method to set window content size, so content area is smaller than the image.
@@ -105,7 +75,7 @@ WindowConfig BaseVideoWidget::getWindowConfig(int width, int height)
     return WindowConfig{aspect_ratio, offset, window_size};
 }
 
-void BaseVideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
+void VideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
 {
     struct WindowConfig configs = *(struct WindowConfig *)data->UserData;
     float diffx = data->CurrentSize.x - data->DesiredSize.x;
@@ -123,7 +93,7 @@ void BaseVideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
     }
 }
 
-void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
+void VideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
 {
     WindowConfig window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), resizeCallback,
