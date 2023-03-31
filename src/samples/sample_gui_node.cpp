@@ -56,13 +56,18 @@ public:
         // Create a /dateandtime RosData subscriber
         std::shared_ptr<RosStringSubscriberData> subscriber_dateandtime = std::make_shared<RosStringSubscriberData>(
             gui_node_ptr, "dateandtime",
-            [](const std_msgs::msg::String::SharedPtr msg) -> std::string {
-            return msg->data; });
+            [](const std_msgs::msg::String::SharedPtr msg) -> std::string { return msg->data; });
         gui_node_ptr->addRosData("dateandtime_subscriber", subscriber_dateandtime);
 
         // Create a widget to display the date and time
-        std::shared_ptr<StringSubscriberWidget> dateandtime_widget =
-            std::make_shared<StringSubscriberWidget>(gui_node_ptr, "[Sub] Date and time", "dateandtime_subscriber");
+        std::shared_ptr<StringWidget> dateandtime_widget = std::make_shared<StringWidget>(
+            gui_node_ptr, "[Sub] Date and time", "dateandtime_subscriber",
+            [](std::shared_ptr<GuiNode> gui_node_ptr, std::string &data) -> void
+            {
+                std::shared_ptr<RosStringSubscriberData> subscriber_dateandtime =
+                    gui_node_ptr->getRosData("dateandtime_subscriber")->as<RosStringSubscriberData>();
+                data = subscriber_dateandtime->getData();
+            });
         gui_node_ptr->addWidget("dateandtime_widget", dateandtime_widget);
 
         gui_node_ptr->prepare("Sample GUI widgets");
