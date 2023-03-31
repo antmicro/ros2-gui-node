@@ -29,10 +29,10 @@ private:
         data_changed = true;
     }
 
-    typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server
-    std::function<void(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)>
-        service_function; ///< The service function to process requests
-    Tdata data;           ///< The data from the service request
+    typename rclcpp::Service<Tmsg>::SharedPtr service; ///< The ROS2 service server.
+    std::function<Tdata(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)>
+        service_function; ///< The service function to process requests.
+    Tdata data;           ///< The data from the service request.
 public:
     /**
      * Constructor.
@@ -64,4 +64,4 @@ public:
     }
 };
 
-}; // namespace gui_node
+} // namespace gui_node

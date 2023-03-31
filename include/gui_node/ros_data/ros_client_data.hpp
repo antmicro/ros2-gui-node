@@ -84,6 +84,13 @@ public:
         data_changed = false;
         return data;
     }
+
+    /**
+     * Returns whether the service is available.
+     *
+     * @return bool True if the service is available.
+     */
+    bool isServiceAvailable() { return client->service_is_ready(); }
 };
 
-}; // namespace gui_node
+} // namespace gui_node
