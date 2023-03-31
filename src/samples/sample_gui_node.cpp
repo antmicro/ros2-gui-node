@@ -2,8 +2,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include "gui_node/gui_node.hpp"
+#include "gui_node/widget/widget_counter.hpp"
 #include "gui_node/widget/widget_rosout.hpp"
 #include "gui_node/widget/widget_string.hpp"
 #include "gui_node/widget/widget_video.hpp"
@@ -16,6 +18,7 @@ using MsgRosoutSharedPtr = rcl_interfaces::msg::Log::SharedPtr;
 using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
 using RosRosoutSubscriberData = RosSubscriberData<rcl_interfaces::msg::Log, rcl_interfaces::msg::Log::SharedPtr>;
 using RosStringSubscriberData = RosSubscriberData<std_msgs::msg::String, std::string>;
+using RosCounterClientData = RosServiceClientData<std_srvs::srv::Trigger, std_srvs::srv::Trigger::Response>;
 
 class SampleGuiComponent
 {
@@ -69,6 +72,18 @@ public:
                 data = subscriber_dateandtime->getData();
             });
         gui_node_ptr->addWidget("dateandtime_widget", dateandtime_widget);
+
+        // Create a /counter RosData service client
+        std::shared_ptr<RosCounterClientData> client_counter = std::make_shared<RosCounterClientData>(
+            gui_node_ptr, "/counter",
+            [](std_srvs::srv::Trigger::Response::SharedPtr response) -> std_srvs::srv::Trigger::Response::SharedPtr
+            { return response; });
+        gui_node_ptr->addRosData("counter_service", client_counter);
+
+        // Create a counter widget
+        std::shared_ptr<CounterWidget> counter_widget =
+            std::make_shared<CounterWidget>(gui_node_ptr, "[Client] Counter", "counter_service");
+        gui_node_ptr->addWidget("counter_widget", counter_widget);
 
         gui_node_ptr->prepare("Sample GUI widgets");
     }

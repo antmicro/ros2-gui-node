@@ -14,6 +14,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -56,9 +57,10 @@ ament_target_dependencies(gui_node rclcpp)
 #######################
 add_library(sample_gui_node SHARED
     src/samples/sample_gui_node.cpp
+    src/widget/widget_counter.cpp
     src/widget/widget_rosout.cpp
-    src/widget/widget_video.cpp
     src/widget/widget_string.cpp
+    src/widget/widget_video.cpp
 )
 
 target_link_libraries(sample_gui_node
@@ -71,6 +73,7 @@ ament_target_dependencies(sample_gui_node
     rclcpp_components
     sensor_msgs
     std_msgs
+    std_srvs
 )
 
 rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
@@ -90,8 +93,9 @@ target_link_libraries(sample_publish_node
 ament_target_dependencies(sample_publish_node
     rclcpp
     rclcpp_components
-    std_msgs
     sensor_msgs
+    std_msgs
+    std_srvs
 )
 
 rclcpp_components_register_nodes(sample_publish_node "gui_node::SamplePublisherComponent")
