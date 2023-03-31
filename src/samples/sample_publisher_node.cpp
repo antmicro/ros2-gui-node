@@ -3,17 +3,20 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <string>
 #include <thread>
 
 #include "gui_node/gui_node.hpp"
 #include "gui_node/ros_data/ros_publisher_data.hpp"
+#include "gui_node/ros_data/ros_server_data.hpp"
 
 namespace gui_node
 {
 
 using RosStringPublisherData = RosPublisherData<std_msgs::msg::String, std::string>;
 using RosImagePublisherData = RosPublisherData<sensor_msgs::msg::Image, cv::Mat>;
+using RosCounterServerData = RosServiceServerData<std_srvs::srv::Trigger, std_srvs::srv::Trigger::Response::SharedPtr>;
 
 class SamplePublisherComponent
 {
@@ -106,6 +109,18 @@ public:
                     video_publisher_data->publish(frame);
                 }
             });
+
+        // Create the /counter RosData service server
+        std::shared_ptr<RosCounterServerData> ros_server_data_ptr = std::make_shared<RosCounterServerData>(
+            gui_node_ptr, "/counter",
+            [](std_srvs::srv::Trigger::Request::SharedPtr request,
+               std_srvs::srv::Trigger::Response::SharedPtr response) -> std_srvs::srv::Trigger::Response::SharedPtr
+            {
+                response->success = true;
+                response->message = "triggered";
+                return response;
+            });
+        gui_node_ptr->addRosData("counter_server", ros_server_data_ptr);
     }
 
     ~SamplePublisherComponent()
