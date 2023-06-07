@@ -7,16 +7,59 @@
 
 namespace gui_node
 {
-int VideoWidget::encoding2channels(const std::string &encoding)
+int VideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
 {
-    if (encoding == "rgba8")
+    if (msg.encoding == "rgba8")
     {
         return 4;
     }
-    else
+
+    std::vector<std::string> supported_encodings = {"rgb8", "bgr8", "bgra8"};
+
+    if (std::find(supported_encodings.begin(), supported_encodings.end(), msg.encoding) == supported_encodings.end())
     {
+        RCLCPP_ERROR(gui_node->get_logger(), "Unsupported encoding: %s", msg.encoding.c_str());
         return -1;
     }
+
+    std::vector<unsigned char> rgba_buffer(msg.width * msg.height * 4);
+    unsigned int image_size = msg.width * msg.height;
+
+    if (msg.encoding == "rgb8")
+    {
+        for (unsigned int i = 0; i < image_size; i++)
+        {
+            rgba_buffer[i * 4] = msg.data[i * 3];
+            rgba_buffer[i * 4 + 1] = msg.data[i * 3 + 1];
+            rgba_buffer[i * 4 + 2] = msg.data[i * 3 + 2];
+            rgba_buffer[i * 4 + 3] = 255;
+        }
+    }
+    else if (msg.encoding == "bgra8")
+    {
+        for (unsigned int i = 0; i < image_size; i++)
+        {
+            rgba_buffer[i * 4] = msg.data[i * 4 + 2];
+            rgba_buffer[i * 4 + 1] = msg.data[i * 4 + 1];
+            rgba_buffer[i * 4 + 2] = msg.data[i * 4];
+            rgba_buffer[i * 4 + 3] = msg.data[i * 4 + 3];
+        }
+    }
+    else if (msg.encoding == "bgr8")
+    {
+        for (unsigned int i = 0; i < image_size; i++)
+        {
+            rgba_buffer[i * 4] = msg.data[i * 3 + 2];
+            rgba_buffer[i * 4 + 1] = msg.data[i * 3 + 1];
+            rgba_buffer[i * 4 + 2] = msg.data[i * 3];
+            rgba_buffer[i * 4 + 3] = 255;
+        }
+    }
+
+    msg.data = rgba_buffer;
+    msg.encoding = "rgba8";
+    msg.step = msg.width * 4;
+    return 4;
 }
 
 void VideoWidget::draw()
@@ -28,7 +71,7 @@ void VideoWidget::draw()
         // Create a shared pointer to the data
         sensor_msgs::msg::Image msg = sensor_msgs::msg::Image();
         frame_converter(gui_node, msg);
-        int channels = encoding2channels(msg.encoding);
+        int channels = convert2rgba(msg);
         if (channels == -1)
         {
             RCLCPP_ERROR(gui_node->get_logger(), "Unsupported encoding: %s", msg.encoding.c_str());

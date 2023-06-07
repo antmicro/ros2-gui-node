@@ -61,13 +61,14 @@ protected:
      */
     void drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader);
 
-    /**
-     * Converts an image encoding string to amount of channels.
+    /*
+     * Converts the image data and encoding to RGBA8 format if needed.
      *
-     * @param encoding The image encoding string.
+     * @param msg The sensor_msgs::msg::Image message to change the encoding of if needed.
+     *
      * @return The amount of channels, or -1 if the encoding is not supported.
      */
-    int encoding2channels(const std::string &encoding);
+    int convert2rgba(sensor_msgs::msg::Image &msg);
 
     bool texture_initialized = false;           ///< Whether the texture has been initialized
     std::vector<unsigned char> last_image_data; ///< The last image data received
