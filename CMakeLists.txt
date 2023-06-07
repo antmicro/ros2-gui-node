@@ -15,6 +15,7 @@ find_package(rcl_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(cvnode_msgs REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -82,6 +83,30 @@ ament_target_dependencies(sample_gui_node
 rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
 
 #######################
+# YolactGuiComponent
+#######################
+add_library(yolact_gui_node SHARED
+    src/samples/yolact_gui_node.cpp
+    src/widget/widget_video.cpp
+    src/widget/widget_detection.cpp
+)
+
+target_link_libraries(yolact_gui_node
+    gui_node
+    ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(yolact_gui_node
+    rcl_interfaces
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    cvnode_msgs
+)
+
+rclcpp_components_register_nodes(yolact_gui_node "gui_node::YolactGuiComponent")
+
+#######################
 # SamplePublisherComponent
 #######################
 add_library(sample_publish_node SHARED
@@ -110,6 +135,7 @@ install(TARGETS
     gui_node
     sample_gui_node
     sample_publish_node
+    yolact_gui_node
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
