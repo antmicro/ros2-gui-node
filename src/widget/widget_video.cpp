@@ -7,14 +7,14 @@
 
 namespace gui_node
 {
-int VideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
+int BaseVideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
 {
     if (msg.encoding == "rgba8")
     {
         return 4;
     }
 
-    std::vector<std::string> supported_encodings = {"rgb8", "bgr8", "bgra8"};
+    std::vector<std::string> supported_encodings = {"rgb8", "bgr8", "bgra8", "8UC3", "8UC4"};
 
     if (std::find(supported_encodings.begin(), supported_encodings.end(), msg.encoding) == supported_encodings.end())
     {
@@ -35,7 +35,7 @@ int VideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
             rgba_buffer[i * 4 + 3] = 255;
         }
     }
-    else if (msg.encoding == "bgra8")
+    else if (msg.encoding == "bgra8" || msg.encoding == "8UC4")
     {
         for (unsigned int i = 0; i < image_size; i++)
         {
@@ -45,7 +45,7 @@ int VideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
             rgba_buffer[i * 4 + 3] = msg.data[i * 4 + 3];
         }
     }
-    else if (msg.encoding == "bgr8")
+    else if (msg.encoding == "bgr8" || msg.encoding == "8UC3")
     {
         for (unsigned int i = 0; i < image_size; i++)
         {
@@ -62,7 +62,7 @@ int VideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
     return 4;
 }
 
-void VideoWidget::draw()
+void BaseVideoWidget::draw()
 {
     std::shared_ptr<RosData> ros_data = gui_node->getRosData(ros_data_name);
 
@@ -87,7 +87,7 @@ void VideoWidget::draw()
     }
 }
 
-void VideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
+void BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
 {
     std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
     if (!texture_initialized)
@@ -105,12 +105,12 @@ void VideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int wi
     drawImGuiFrame(texture_loader);
 }
 
-WindowConfig VideoWidget::getWindowConfig(int width, int height)
+WindowConfig BaseVideoWidget::getWindowConfig(int width, int height)
 {
     ImGuiStyle &style = ImGui::GetStyle();
     // ImGui doesn't provide method to set window content size, so content area is smaller than the image.
     // This is a workaround to create a window that fits the image.
-    const int title_bar_size = ImGui::GetFontSize() + style.FramePadding.y * 2;
+    const int title_bar_size = std::round(ImGui::GetFontSize()) + style.FramePadding.y * 2;
     // To reduce window flickering the aspect ration is rounded to 1 decimal place
     float aspect_ratio = round((float)width / (float)height * 10) / 10;
     ImVec2 offset = ImVec2(style.WindowPadding.x * 2, style.WindowPadding.y * 2 + title_bar_size);
@@ -118,7 +118,7 @@ WindowConfig VideoWidget::getWindowConfig(int width, int height)
     return WindowConfig{aspect_ratio, offset, window_size};
 }
 
-void VideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
+void BaseVideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
 {
     struct WindowConfig configs = *(struct WindowConfig *)data->UserData;
     float diffx = data->CurrentSize.x - data->DesiredSize.x;
@@ -129,7 +129,7 @@ void VideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
         data->DesiredSize.x = data->CurrentSize.x - diff;
         data->DesiredSize.y = ((data->DesiredSize.x - configs.offset.x) / configs.aspect_ratio) + configs.offset.y;
     }
-    else if (std::abs(diffx) == 0 || std::abs(diffy) == 0)
+    else if (abs(diff) > 0 && (std::abs(diffx) == 0 || std::abs(diffy) == 0))
     {
         data->DesiredSize.x = data->CurrentSize.x - diff;
         data->DesiredSize.y = ((data->DesiredSize.x - configs.offset.x) / configs.aspect_ratio) + configs.offset.y;
@@ -141,16 +141,19 @@ void VideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
     }
 }
 
-void VideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
+void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
 {
     WindowConfig window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
     ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), resizeCallback,
                                         (void *)&window_configs);
     ImGui::Begin(window_name.c_str(), NULL, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-    ImGui::SetWindowSize(window_configs.window_size, ImGuiCond_Once);
     ImVec2 view = ImGui::GetWindowSize();
+    scale_factor = view.x / base_width;
+    window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
+    ImGui::SetWindowSize(window_configs.window_size, ImGuiCond_Once);
     ImGui::Image((ImTextureID)texture_loader->getDescriptorSet(),
                  ImVec2(view.x - window_configs.offset.x, view.y - window_configs.offset.y));
+    imgui_callback();
     ImGui::End();
 }
 } // namespace gui_node
