@@ -124,7 +124,12 @@ void VideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
     float diffx = data->CurrentSize.x - data->DesiredSize.x;
     float diffy = data->CurrentSize.y - data->DesiredSize.y;
     int diff = diffx + diffy;
-    if (abs(diff) > 3)
+    if (abs(diff) > 50 && std::abs(diffx) > 0 && std::abs(diffy) > 0)
+    {
+        data->DesiredSize.x = data->CurrentSize.x - diff;
+        data->DesiredSize.y = ((data->DesiredSize.x - configs.offset.x) / configs.aspect_ratio) + configs.offset.y;
+    }
+    else if (std::abs(diffx) == 0 || std::abs(diffy) == 0)
     {
         data->DesiredSize.x = data->CurrentSize.x - diff;
         data->DesiredSize.y = ((data->DesiredSize.x - configs.offset.x) / configs.aspect_ratio) + configs.offset.y;
