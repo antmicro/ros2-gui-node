@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 #include <imgui_impl_vulkan.h>
+#include <imgui_stdlib.h>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>

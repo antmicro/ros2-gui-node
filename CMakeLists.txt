@@ -22,12 +22,14 @@ find_package(OpenCV REQUIRED)
 include_directories(include
     third-party/imgui
     third-party/imgui/backends
+    third-party/imgui/misc/cpp
     Vulkan::Headers
 )
 
 set(IMGUI_SOURCES
     third-party/imgui/backends/imgui_impl_glfw.cpp
     third-party/imgui/backends/imgui_impl_vulkan.cpp
+    third-party/imgui/misc/cpp/imgui_stdlib.cpp
     third-party/imgui/imgui_draw.cpp
     third-party/imgui/imgui_tables.cpp
     third-party/imgui/imgui_widgets.cpp
