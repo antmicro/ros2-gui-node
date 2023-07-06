@@ -70,7 +70,8 @@ ament_clang_format --config .clang-format --reformat <path_to_files_or_directori
 Widgets are responsible for creating the GUI elements and displaying the data.
 
 Following widgets are already implemented in the `GuiNode`:
-* `VideoWidget` - processes and displays messages with `sensor_msgs::msg::Image` message type.
+* `VideoWidget` - displays image from the `sensor_msgs::msg::Image` message type.
+* `DetectionWidget` - displays image from the `sensor_msgs::msg::Image` message type and draws bounding boxes.
 * `StringWidget` - displays the `std::string` data in a text box.
 * `RosoutWidget` - displays the messages from the `/rosout` topic (the ROS2 logging topic) in a table view.
 
