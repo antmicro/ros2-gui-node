@@ -1,4 +1,5 @@
 #include <memory>
+#include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vector>
@@ -22,41 +23,25 @@ int BaseVideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
         return -1;
     }
 
-    std::vector<unsigned char> rgba_buffer(msg.width * msg.height * 4);
-    unsigned int image_size = msg.width * msg.height;
+    cv::Mat buffer;
 
     if (msg.encoding == "rgb8")
     {
-        for (unsigned int i = 0; i < image_size; i++)
-        {
-            rgba_buffer[i * 4] = msg.data[i * 3];
-            rgba_buffer[i * 4 + 1] = msg.data[i * 3 + 1];
-            rgba_buffer[i * 4 + 2] = msg.data[i * 3 + 2];
-            rgba_buffer[i * 4 + 3] = 255;
-        }
+        buffer = cv::Mat(msg.height, msg.width, CV_8UC3, msg.data.data());
+        cv::cvtColor(buffer, buffer, cv::COLOR_RGB2RGBA);
     }
     else if (msg.encoding == "bgra8" || msg.encoding == "8UC4")
     {
-        for (unsigned int i = 0; i < image_size; i++)
-        {
-            rgba_buffer[i * 4] = msg.data[i * 4 + 2];
-            rgba_buffer[i * 4 + 1] = msg.data[i * 4 + 1];
-            rgba_buffer[i * 4 + 2] = msg.data[i * 4];
-            rgba_buffer[i * 4 + 3] = msg.data[i * 4 + 3];
-        }
+        buffer = cv::Mat(msg.height, msg.width, CV_8UC4, msg.data.data());
+        cv::cvtColor(buffer, buffer, cv::COLOR_BGRA2RGBA);
     }
     else if (msg.encoding == "bgr8" || msg.encoding == "8UC3")
     {
-        for (unsigned int i = 0; i < image_size; i++)
-        {
-            rgba_buffer[i * 4] = msg.data[i * 3 + 2];
-            rgba_buffer[i * 4 + 1] = msg.data[i * 3 + 1];
-            rgba_buffer[i * 4 + 2] = msg.data[i * 3];
-            rgba_buffer[i * 4 + 3] = 255;
-        }
+        buffer = cv::Mat(msg.height, msg.width, CV_8UC3, msg.data.data());
+        cv::cvtColor(buffer, buffer, cv::COLOR_BGR2RGBA);
     }
 
-    msg.data = rgba_buffer;
+    msg.data.assign(buffer.datastart, buffer.dataend);
     msg.encoding = "rgba8";
     msg.step = msg.width * 4;
     return 4;

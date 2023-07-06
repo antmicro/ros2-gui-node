@@ -67,6 +67,7 @@ add_library(sample_gui_node SHARED
 
 target_link_libraries(sample_gui_node
     gui_node
+    ${OpenCV_LIBS}
 )
 
 ament_target_dependencies(sample_gui_node

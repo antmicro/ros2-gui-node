@@ -77,14 +77,9 @@ public:
                     RCLCPP_ERROR(gui_node_ptr->get_logger(), "Frame is empty");
                     return msg;
                 }
-                else if (frame.type() != CV_8UC4)
-                {
-                    RCLCPP_ERROR(gui_node_ptr->get_logger(), "Frame type is not CV_8UC4");
-                    return msg;
-                }
                 msg.header.stamp = rclcpp::Clock().now();
                 msg.header.frame_id = "video";
-                msg.encoding = "rgba8";
+                msg.encoding = "bgr8";
                 msg.height = frame.rows;
                 msg.width = frame.cols;
                 msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(frame.step);
@@ -102,8 +97,6 @@ public:
                 while (rclcpp::ok() && !stop_video_capture_thread.load())
                 {
                     video_capture >> frame;
-                    // Convert the frame to RGBA
-                    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
                     std::shared_ptr<RosImagePublisherData> video_publisher_data =
                         gui_node_ptr->getRosData("video_publisher")->as<RosImagePublisherData>();
                     video_publisher_data->publish(frame);
