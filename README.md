@@ -39,41 +39,17 @@ ros2 launch gui_node sample_launch.py
 
 More information about the samples can be found in the `src/samples` directory.
 
-## Code formatting
-
-Formatting dependencies:
-
-* `ament_uncrustify` (ROS2 package)
-* `clang-format`
-* `clang-tidy`
-
-The `GuiNode` uses the `ament_clang_format` and `ament_clang_tidy` packages to verify the code formatting and lint the code.
-To run the lint checks, the `GuiNode` must be built first, and then the `colcon test` command can be used to run the lint checks.
-```bash
-source <path_to_ros2_env>
-cd <path_to_gui_node_repo>
-colcon build
-colcon test
-colcon test-result --all
-```
-
-In case of any lint errors, the `colcon test-result` command will print the list of files that contain the errors.
-The `ament_clang_format` and `ament_clang_tidy` packages can be used to automatically fix the formatting issues:
-```bash
-cd <path_to_gui_node_repo>
-ament_clang_format --config .clang-format --reformat <path_to_files_or_directories>
-```
-
 ## Widgets and RosData objects
 
 `GuiNode` offers a number of pre-implemented widgets, which can be used to visualize the data.
 Widgets are responsible for creating the GUI elements and displaying the data.
 
 Following widgets are already implemented in the `GuiNode`:
+
 * `VideoWidget` - displays image from the `sensor_msgs::msg::Image` message type.
-* `DetectionWidget` - displays image from the `sensor_msgs::msg::Image` message type and draws bounding boxes.
 * `StringWidget` - displays the `std::string` data in a text box.
 * `RosoutWidget` - displays the messages from the `/rosout` topic (the ROS2 logging topic) in a table view.
+* `DetectionWidget` - displays image from the `sensor_msgs::msg::Image` message type and draws bounding boxes.
 
 Widgets are using `RosData` objects to get the fresh data from the ROS2 topics or services.
 Corresponding `RosData` object should be created and added to the `GuiNode` before the `gui_node->prepare()` method is called.
@@ -81,6 +57,7 @@ Corresponding `RosData` object should be created and added to the `GuiNode` befo
 The `RosData` objects are responsible for maintaining the data from the ROS2 topics or services.
 
 An example of adding the `RosoutWidget` widget to the `GuiNode` instance:
+
 ```cpp
 #include "gui_node/gui_node.hpp"
 #include "gui_node/widget/widget_rosout.hpp"
@@ -107,6 +84,7 @@ gui_node_ptr->prepare("Window name");
 ```
 
 `GuiNode` offers following set of implemented `RosData` objects:
+
 * `RosPublisherData` - publishes the data to the ROS2 topic and saves the last published data.
 * `RosSubscriberData` - subscribes to the ROS2 topic and provides the last received data.
 * `RosServiceServerData` - provides the service server that saves the data from the last processed request.
@@ -114,10 +92,10 @@ gui_node_ptr->prepare("Window name");
 
 For more information about the `RosData` objects, see the `include/gui_node/ros_data` directory, and for more information about the widgets, see the `include/gui_node/widget` directory.
 
-## Implementing a widget
+## Implementing a Widget
 
 Widgets are created by inheriting the `Widget` class and implementing the `draw` method.
-`GuiNode` calls widget's `draw` method every frame, and the widget is responsible for displaying the data and handling the user input.
+`GuiNode` calls Widget's `draw` method every frame, and the widget is responsible for displaying the data and handling the user input.
 
 ### Creating a new widget
 
@@ -128,10 +106,12 @@ The obligatory parameters for the `Widget` constructor are:
 * `window_name` - the name of the widget's window;
 * `ros_data_name` - the name of the `RosData` object that will be used to fresh the data for the widget.
 
-Sample declaration of the `CounterWidget` class in the `include/gui_node/widget/widget_counter.hpp` file:
+Sample declaration of the `CounterWidget` class (the example can be found in `include/gui_node/widget/widget_counter.hpp` and `src/gui_node/widget/widget_counter.cpp` files):
 ```cpp
 #include <memory>
 #include <string>
+
+#include <std_srvs/srv/trigger.hpp>
 
 #include "gui_node/gui_node.hpp"
 #include "gui_node/ros_data/ros_client_data.hpp"
@@ -154,7 +134,48 @@ public:
     /**
      * Draw the widget
      */
-    void draw() override;
+    void draw() override {
+        // Get the data
+        using RosCounterClientData = RosServiceClientData<std_srvs::srv::Trigger, std_srvs::srv::Trigger::Response>;
+        std::shared_ptr<RosCounterClientData> ros_data =
+            this->gui_node->getRosData(ros_data_name)->as<RosCounterClientData>();
+        if (ros_data->hasDataChanged())
+        {
+            std_srvs::srv::Trigger::Response response = ros_data->getData();
+            if (response.success && response.message == "triggered")
+            {
+                counter++;
+            }
+        }
+
+        // Draw the widget
+        ImGui::Begin(window_name.c_str());
+        ImGui::SetWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize("Trigger").x) / 2);
+
+        // If service is not available, disable the button
+        if (ros_data->isServiceAvailable())
+        {
+            if (ImGui::Button("Trigger"))
+            {
+                // Make the request
+                std_srvs::srv::Trigger::Request::SharedPtr request = std::make_shared<std_srvs::srv::Trigger::Request>();
+                ros_data->sendRequest(request);
+            }
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 0.6f, 0.6f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
+            ImGui::Button("Trigger");
+            ImGui::PopStyleColor(3);
+        }
+        std::string counter_str = "Counter: " + std::to_string(counter);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(counter_str.c_str()).x) / 2);
+        ImGui::Text("%s", counter_str.c_str());
+        ImGui::End();
+    }
 };
 
 } // namespace gui_node
@@ -163,64 +184,9 @@ public:
 Overridden `draw` method is responsible for drawing the widget and is called by the `GuiNode` every time the drawing loop is executed.
 Usually, the `draw` method uses the `getRosData` method of the `GuiNode` to get the `RosData` object, and later visualizes data from it.
 
-The `GuiEngine` class expects widgets to be drawn using the `Dear ImGui` library, which is already included in the `include/gui_node/gui_engine.hpp` file.
+The `GuiEngine` class expects widgets to be drawn using the `Dear ImGui` library.
 
-Sample implementation of the `draw` method in the `src/widget/widget_counter.cpp`:
-```cpp
-#include <std_srvs/srv/trigger.hpp>
-
-#include "gui_node/ros_data/ros_client_data.hpp"
-#include "gui_node/widget/widget_counter.hpp"
-
-namespace gui_node
-{
-void CounterWidget::draw()
-{
-    // Get the data
-    using RosCounterClientData = RosServiceClientData<std_srvs::srv::Trigger, std_srvs::srv::Trigger::Response>;
-    std::shared_ptr<RosCounterClientData> ros_data =
-        this->gui_node->getRosData(ros_data_name)->as<RosCounterClientData>();
-    if (ros_data->hasDataChanged())
-    {
-        std_srvs::srv::Trigger::Response response = ros_data->getData();
-        if (response.success && response.message == "triggered")
-        {
-            counter++;
-        }
-    }
-
-    // Draw the widget
-    ImGui::Begin(window_name.c_str());
-    ImGui::SetWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
-    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize("Trigger").x) / 2);
-
-    // If service is not available, disable the button
-    if (ros_data->isServiceAvailable())
-    {
-        if (ImGui::Button("Trigger"))
-        {
-            // Make the request
-            std_srvs::srv::Trigger::Request::SharedPtr request = std::make_shared<std_srvs::srv::Trigger::Request>();
-            ros_data->sendRequest(request);
-        }
-    }
-    else
-    {
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 0.6f, 0.6f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
-        ImGui::Button("Trigger");
-        ImGui::PopStyleColor(3);
-    }
-    std::string counter_str = "Counter: " + std::to_string(counter);
-    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(counter_str.c_str()).x) / 2);
-    ImGui::Text("%s", counter_str.c_str());
-    ImGui::End();
-}
-} // namespace gui_node
-```
-
-First, the `draw` method obtains the `RosCounterClientData` object from the `GuiNode`, and verifies if the data has changed since the last invocation of the `draw` method.
+The `draw` method obtains the `RosCounterClientData` object from the `GuiNode`, and verifies if the data has changed since the last invocation of the `draw` method.
 If the fresh data is available, the response is verified to be successful with counter value being incremented.
 
 In case the service is not available, the button is disabled.
@@ -283,15 +249,15 @@ SampleGuiComponent(const rclcpp::NodeOptions &options)
     ...
 
     // Create the /counter RosData service server
-        std::shared_ptr<RosCounterServerData> ros_server_data_ptr = std::make_shared<RosCounterServerData>(
-        gui_node_ptr, "/counter",
-        [](std_srvs::srv::Trigger::Request::SharedPtr request,
-           std_srvs::srv::Trigger::Response::SharedPtr response) -> std_srvs::srv::Trigger::Response::SharedPtr
-        {
-            response->success = true;
-            response->message = "triggered";
-            return response;
-        });
+    std::shared_ptr<RosCounterServerData> ros_server_data_ptr = std::make_shared<RosCounterServerData>(
+    gui_node_ptr, "/counter",
+    [](std_srvs::srv::Trigger::Request::SharedPtr request,
+       std_srvs::srv::Trigger::Response::SharedPtr response) -> std_srvs::srv::Trigger::Response::SharedPtr
+    {
+        response->success = true;
+        response->message = "triggered";
+        return response;
+    });
     gui_node_ptr->addRosData("counter_server", ros_server_data_ptr);
 }
 
@@ -307,4 +273,31 @@ cd <path_to_gui_node_repo>
 colcon build
 source install/local_setup.bash
 ros2 launch gui_node sample_launch.py
+```
+
+## Code formatting
+
+Formatting dependencies:
+
+* `ament_uncrustify` (ROS2 package)
+* `clang-format`
+* `clang-tidy`
+
+The `GuiNode` uses the `ament_clang_format` and `ament_clang_tidy` packages to verify the code formatting and lint the code.
+To run the lint checks, the `GuiNode` must be built first, and then the `colcon test` command can be used to run the lint checks.
+
+```bash
+source <path_to_ros2_env>
+cd <path_to_gui_node_repo>
+colcon build
+colcon test
+colcon test-result --all
+```
+
+In case of any lint errors, the `colcon test-result` command will print the list of files that contain the errors.
+The `ament_clang_format` and `ament_clang_tidy` packages can be used to automatically fix the formatting issues:
+
+```bash
+cd <path_to_gui_node_repo>
+ament_clang_format --config .clang-format --reformat <path_to_files_or_directories>
 ```
