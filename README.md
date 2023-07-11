@@ -2,7 +2,7 @@
 
 Copyright (c) 2022-2023 [Antmicro](https://www.antmicro.com)
 
-`GuiNode` is a library intended to visualize data from ROS2 topics and services.
+`GuiNode` is a library for visualizing data from ROS2 topics and services.
 It provides tools for manipulating widgets and data objects, which can be used for data visualization.
 The graphical user interface is implemented using the Vulkan API, GLFW3, and Dear ImGui libraries.
 
@@ -16,8 +16,8 @@ Project dependencies:
 * `GLFW3`
 
 The `GuiNode` uses the `colcon` build system to build the project.
-First, the `ROS2` environment must be sourced, and then the `colcon` command can be used to build the project.
-The `<path_to_ros2_env>` should be replaced with the path to the ROS2 environment setup script (e.g. `/opt/ros/setup.bash`).
+First, you need to source the `ROS2` environment, and then you can use the `colcon` command to build the project.
+You should replace `<path_to_ros2_env>` with the path to the ROS2 environment setup script (e.g. `/opt/ros/setup.bash`).
 
 ```bash
 source <path_to_ros2_env>
@@ -25,38 +25,38 @@ cd <path_to_gui_node_repo>
 colcon build
 ```
 
-Artifacts from the building stage are placed under the `install/` directory, and contain setup scripts for the `GuiNode` environment.
+You can find the artifacts from the building stage in the `install/` directory. They contain setup scripts for the `GuiNode` environment.
 
 ```bash
 source install/local_setup.bash
 ```
 
-Once the `GuiNode` environment is sourced, the `GuiNode`'s sample can be run using the `ros2 launch` command.
+Once the `GuiNode` environment is sourced, you can run the `GuiNode` sample using the `ros2 launch` command:
 
 ```bash
 ros2 launch gui_node sample_launch.py
 ```
 
-More information about the samples can be found in the `src/samples` directory.
+For more information about the samples, go to the `src/samples` directory.
 
 ## Widgets and RosData objects
 
-`GuiNode` offers a number of pre-implemented widgets, which can be used to visualize the data.
+`GuiNode` offers a number of pre-implemented widgets which can be used to visualize the data.
 Widgets are responsible for creating the GUI elements and displaying the data.
 
-Following widgets are already implemented in the `GuiNode`:
+The following widgets are already implemented in the `GuiNode`:
 
-* `VideoWidget` - displays image from the `sensor_msgs::msg::Image` message type.
+* `VideoWidget` - displays an image from the `sensor_msgs::msg::Image` message type.
 * `StringWidget` - displays the `std::string` data in a text box.
-* `RosoutWidget` - displays the messages from the `/rosout` topic (the ROS2 logging topic) in a table view.
-* `DetectionWidget` - displays image from the `sensor_msgs::msg::Image` message type and draws bounding boxes.
+* `RosoutWidget` - displays messages from the `/rosout` topic (the ROS2 logging topic) in table view.
+* `DetectionWidget` - displays an image from the `sensor_msgs::msg::Image` message type and draws bounding boxes.
 
-Widgets are using `RosData` objects to get the fresh data from the ROS2 topics or services.
-Corresponding `RosData` object should be created and added to the `GuiNode` before the `gui_node->prepare()` method is called.
+Widgets are using `RosData` objects to get fresh data from topics or services.
+You should create the corresponding `RosData` object add it to the `GuiNode` before calling the `gui_node->prepare()` method.
 
-The `RosData` objects are responsible for maintaining the data from the ROS2 topics or services.
+The `RosData` objects are responsible for handling data from ROS2 topics or services.
 
-An example of adding the `RosoutWidget` widget to the `GuiNode` instance:
+Below is an example of how to add the `RosoutWidget` widget to the `GuiNode` instance:
 
 ```cpp
 #include "gui_node/gui_node.hpp"
@@ -83,30 +83,31 @@ gui_node_ptr->prepare("Window name");
 ...
 ```
 
-`GuiNode` offers following set of implemented `RosData` objects:
+`GuiNode` offers the following set of implemented `RosData` objects:
 
-* `RosPublisherData` - publishes the data to the ROS2 topic and saves the last published data.
-* `RosSubscriberData` - subscribes to the ROS2 topic and provides the last received data.
-* `RosServiceServerData` - provides the service server that saves the data from the last processed request.
-* `RosServiceClientData` - provides the service client that can be used to send the request to the server and save data from the response.
+* `RosPublisherData` - publishes data to a ROS2 topic and saves the last published data.
+* `RosSubscriberData` - subscribes to a ROS2 topic and provides the last received data.
+* `RosServiceServerData` - provides a service server that saves data from the last processed request.
+* `RosServiceClientData` - provides a service client that can be used to send a request to the server and save data from the response.
 
-For more information about the `RosData` objects, see the `include/gui_node/ros_data` directory, and for more information about the widgets, see the `include/gui_node/widget` directory.
+For more information about `RosData` objects, see the `include/gui_node/ros_data` directory, and for more information about widgets, see the `include/gui_node/widget` directory.
 
 ## Implementing a Widget
 
-Widgets are created by inheriting the `Widget` class and implementing the `draw` method.
-`GuiNode` calls Widget's `draw` method every frame, and the widget is responsible for displaying the data and handling the user input.
+You can create Widgets by inheriting the `Widget` class and implementing the `draw` method.
+`GuiNode` calls a Widget's `draw` method every frame and the widget is responsible for displaying data and handling user input.
 
 ### Creating a new widget
 
-This section will demonstrate the creation of a new widget that displays a counter value and provides a button for incrementing it.
+In this section, you will see how to create a new widget that displays a counter value and provides a button for incrementing it.
 
 The obligatory parameters for the `Widget` constructor are:
-* `gui_node` - the `GuiNode` shared pointer that will be used for logging and accessing the `RosData` objects;
+* `gui_node` - a `GuiNode` shared pointer that will be used for logging and accessing `RosData` objects;
 * `window_name` - the name of the widget's window;
-* `ros_data_name` - the name of the `RosData` object that will be used to fresh the data for the widget.
+* `ros_data_name` - a unique name of the `RosData` object that will be used to reference the object with data in the widget objects during render.
 
-Sample declaration of the `CounterWidget` class (the example can be found in `include/gui_node/widget/widget_counter.hpp` and `src/gui_node/widget/widget_counter.cpp` files):
+A sample declaration of the `CounterWidget` class (the example can be found in `include/gui_node/widget/widget_counter.hpp` and `src/gui_node/widget/widget_counter.cpp` files):
+
 ```cpp
 #include <memory>
 #include <string>
@@ -181,7 +182,7 @@ public:
 } // namespace gui_node
 ```
 
-Overridden `draw` method is responsible for drawing the widget and is called by the `GuiNode` every time the drawing loop is executed.
+The overridden `draw` method is responsible for drawing the widget and called by the `GuiNode` every time the drawing loop is executed.
 Usually, the `draw` method uses the `getRosData` method of the `GuiNode` to get the `RosData` object, and later visualizes data from it.
 
 The `GuiEngine` class expects widgets to be drawn using the `Dear ImGui` library.
@@ -234,6 +235,7 @@ The `CounterWidget` object is created and added to the `GuiNode` using the `addW
 
 Without the `/counter` server, the increment button will be disabled.
 The corresponding service server is created in the `src/samples/sample_publisher_node.cpp` file, which is responsible for publishing data for the sample:
+
 ```cpp
 #include <std_srvs/srv/trigger.hpp>
 #include "gui_node/ros_data/ros_server_data.hpp"
@@ -264,9 +266,10 @@ SampleGuiComponent(const rclcpp::NodeOptions &options)
 ...
 ```
 
-This code creates a `RosData` service server object, which is responsible for receiving requests from the `/counter` service client and sending responses back.
+This code creates a `RosData` service server object which is responsible for receiving requests from the `/counter` service client and sending back responses.
 
-Now, the sample GUI node can be built and run with widget working as expected:
+Now, you can build and run the sample GUI node with the widget working as expected:
+
 ```bash
 source <path_to_ros2_env>
 cd <path_to_gui_node_repo>
@@ -283,8 +286,8 @@ Formatting dependencies:
 * `clang-format`
 * `clang-tidy`
 
-The `GuiNode` uses the `ament_clang_format` and `ament_clang_tidy` packages to verify the code formatting and lint the code.
-To run the lint checks, the `GuiNode` must be built first, and then the `colcon test` command can be used to run the lint checks.
+The `GuiNode` uses the `ament_clang_format` and `ament_clang_tidy` packages to verify code formatting and lint the code.
+To run the lint checks, build the `GuiNode` and then use the `colcon test` command to run the lint checks.
 
 ```bash
 source <path_to_ros2_env>
@@ -294,8 +297,8 @@ colcon test
 colcon test-result --all
 ```
 
-In case of any lint errors, the `colcon test-result` command will print the list of files that contain the errors.
-The `ament_clang_format` and `ament_clang_tidy` packages can be used to automatically fix the formatting issues:
+In case of any lint errors, the `colcon test-result` command will print a list of files that contain errors.
+The `ament_clang_format` and `ament_clang_tidy` packages can be used to automatically fix formatting issues:
 
 ```bash
 cd <path_to_gui_node_repo>
