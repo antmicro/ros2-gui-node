@@ -28,8 +28,11 @@ public:
      * @param ros_data_name Name for the ROS data.
      * @param string_converter Function to convert data from RosData to std::string.
      */
-    StringWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
-                 std::function<void(std::shared_ptr<GuiNode>, std::string &)> string_converter)
+    StringWidget(
+        std::shared_ptr<GuiNode> gui_node,
+        const std::string &window_name,
+        const std::string &ros_data_name,
+        std::function<void(std::shared_ptr<GuiNode>, std::string &)> string_converter)
         : Widget(gui_node, window_name, ros_data_name), string_converter(string_converter)
     {
     }

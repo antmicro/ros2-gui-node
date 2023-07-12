@@ -15,7 +15,8 @@ namespace gui_node
  * @tparam Tmsg ROS2 message type.
  * @tparam Tdata Data type to be used for processing.
  */
-template <class Tmsg, class Tdata> class RosSubscriberData : public RosData
+template <class Tmsg, class Tdata>
+class RosSubscriberData : public RosData
 {
 private:
     /**
@@ -41,12 +42,17 @@ public:
      * @param data_function Function to convert message to data.
      * @param queue_size The size of the message queue.
      */
-    RosSubscriberData(std::shared_ptr<GuiNode> node, const std::string &topic,
-                      std::function<Tdata(const typename Tmsg::SharedPtr)> data_function, size_t queue_size = 10)
+    RosSubscriberData(
+        std::shared_ptr<GuiNode> node,
+        const std::string &topic,
+        std::function<Tdata(const typename Tmsg::SharedPtr)> data_function,
+        size_t queue_size = 10)
         : RosData(node), data_function(data_function)
     {
         subscriber = node->create_subscription<Tmsg>(
-            topic, queue_size, [this](const typename Tmsg::SharedPtr msg) -> void { this->callback(msg); });
+            topic,
+            queue_size,
+            [this](const typename Tmsg::SharedPtr msg) -> void { this->callback(msg); });
     }
 
     /**

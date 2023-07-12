@@ -14,7 +14,8 @@ namespace gui_node
  * @tparam Tmsg Type of ROS2 request.
  * @tparam Tdata Type of data to be requested.
  */
-template <class Tmsg, class Tdata> class RosServiceClientData : public RosData
+template <class Tmsg, class Tdata>
+class RosServiceClientData : public RosData
 {
 private:
     /**
@@ -46,7 +47,8 @@ public:
      * @param callback_function Function to process the response and return the Tdata.
      */
     RosServiceClientData(
-        std::shared_ptr<GuiNode> node, std::string service_name,
+        std::shared_ptr<GuiNode> node,
+        std::string service_name,
         std::function<typename std::shared_ptr<Tdata>(typename std::shared_ptr<typename Tmsg::Response>)>
             callback_function)
         : RosData(node), callback_function(callback_function)
@@ -71,7 +73,8 @@ public:
             RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
         }
         auto future_result = client->async_send_request(
-            request, std::bind(&RosServiceClientData::process_response, this, std::placeholders::_1));
+            request,
+            std::bind(&RosServiceClientData::process_response, this, std::placeholders::_1));
     }
 
     /**

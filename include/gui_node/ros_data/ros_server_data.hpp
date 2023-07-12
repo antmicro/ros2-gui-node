@@ -13,7 +13,8 @@ namespace gui_node
  * @tparam Tmsg Type of ROS2 service message.
  * @tparam Tdata Type of data to be stored in the class.
  */
-template <class Tmsg, class Tdata> class RosServiceServerData : public RosData
+template <class Tmsg, class Tdata>
+class RosServiceServerData : public RosData
 {
 private:
     /**
@@ -42,7 +43,8 @@ public:
      * @param service_function The service function to process requests, must return data from the request.
      */
     RosServiceServerData(
-        std::shared_ptr<GuiNode> node, const std::string &service_name,
+        std::shared_ptr<GuiNode> node,
+        const std::string &service_name,
         std::function<Tdata(typename Tmsg::Request::SharedPtr, typename Tmsg::Response::SharedPtr)> service_function)
         : RosData(node), service_function(service_function)
     {

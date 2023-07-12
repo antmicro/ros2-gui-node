@@ -21,8 +21,8 @@ class RosoutWidget : public Widget
 {
 private:
     /// Map of ROS log levels to strings
-    const std::unordered_map<uint8_t, std::string> rosout_level_map = {
-        {10, "DEBUG"}, {20, "INFO"}, {30, "WARN"}, {40, "ERROR"}, {50, "FATAL"}};
+    const std::unordered_map<uint8_t, std::string> rosout_level_map =
+        {{10, "DEBUG"}, {20, "INFO"}, {30, "WARN"}, {40, "ERROR"}, {50, "FATAL"}};
 
     /// ImGui table style flags
     ImGuiTableFlags flags =
@@ -39,8 +39,11 @@ public:
      * @param ros_data_name Name of the RosData object that is used to subscribe to the ROS topic.
      * @param max_table_size Maximum number of messages to store in the table. By default, set to 1000.
      */
-    RosoutWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
-                 int max_table_size = 1000);
+    RosoutWidget(
+        std::shared_ptr<GuiNode> gui_node,
+        const std::string &window_name,
+        const std::string &ros_data_name,
+        int max_table_size = 1000);
 
     ~RosoutWidget() = default;
 

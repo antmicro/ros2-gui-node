@@ -274,8 +274,13 @@ public:
      * @param height Height of the image.
      * @param channels Number of channels in the image.
      */
-    TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<rclcpp::Node> node,
-                  std::vector<unsigned char> image_data, int width, int height, int channels);
+    TextureLoader(
+        std::shared_ptr<GuiEngine> gui_engine,
+        std::shared_ptr<rclcpp::Node> node,
+        std::vector<unsigned char> image_data,
+        int width,
+        int height,
+        int channels);
 
     /**
      * Destroys the texture loader and frees all resources.
@@ -337,10 +342,11 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
      * @param p_user_data Pointer to user data.
      * @return VK_FALSE.
      */
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugcallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                                                        VkDebugUtilsMessageTypeFlagsEXT message_type,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
-                                                        void *p_user_data);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugcallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+        VkDebugUtilsMessageTypeFlagsEXT message_type,
+        const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
+        void *p_user_data);
 
     /**
      * Creates create info for the debug messenger.
@@ -592,8 +598,10 @@ public:
      * @param node The ROS2 node for the GUI.
      * @param device_extensions Vector of required extensions for physical device.
      */
-    GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp::Node> node,
-              const std::vector<std::string> &device_extensions);
+    GuiEngine(
+        const std::string &application_name,
+        std::shared_ptr<rclcpp::Node> node,
+        const std::vector<std::string> &device_extensions);
 
     /**
      * Destroy the GuiEngine object.
@@ -624,8 +632,8 @@ public:
      * @param channels The number of channels of the texture.
      * @return bool True if the texture was successfully added, false otherwise.
      */
-    bool addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height,
-                    int channels);
+    bool
+    addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height, int channels);
 
     /**
      * Get pointer to GLFW window.

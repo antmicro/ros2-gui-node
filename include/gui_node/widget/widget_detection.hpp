@@ -6,8 +6,12 @@
 namespace gui_node
 {
 
-using BBoxExtractor = std::function<void(std::shared_ptr<GuiNode>, sensor_msgs::msg::Image &,
-                                         std::vector<BoundingBox> &, const std::string &, const float &)>;
+using BBoxExtractor = std::function<void(
+    std::shared_ptr<GuiNode>,
+    sensor_msgs::msg::Image &,
+    std::vector<BoundingBox> &,
+    const std::string &,
+    const float &)>;
 /**
  * Class for object detection widgets.
  */
@@ -44,10 +48,15 @@ public:
      * @param ros_data_name Name of the ROSData object that widget is associated with.
      * @param data_extractor Function to extract bounding boxes and image form the message.
      */
-    DetectionWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
-                    BBoxExtractor data_extractor)
+    DetectionWidget(
+        std::shared_ptr<GuiNode> gui_node,
+        const std::string &window_name,
+        const std::string &ros_data_name,
+        BBoxExtractor data_extractor)
         : BaseVideoWidget(
-              gui_node, window_name, ros_data_name,
+              gui_node,
+              window_name,
+              ros_data_name,
               std::bind(&DetectionWidget::frame_extractor, this, std::placeholders::_1, std::placeholders::_2),
               std::bind(&DetectionWidget::imgui_callback, this))
     {

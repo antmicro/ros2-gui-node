@@ -62,7 +62,11 @@ public:
      * @tparam T The type of the object to cast to, must be a subclass of RosData.
      * @return Cast RosData shared pointer to the specified type.
      */
-    template <class T> std::shared_ptr<T> as() { return std::dynamic_pointer_cast<T>(shared_from_this()); }
+    template <class T>
+    std::shared_ptr<T> as()
+    {
+        return std::dynamic_pointer_cast<T>(shared_from_this());
+    }
 
     /**
      * Returns whether the data has changed since the last call to the data getter method.

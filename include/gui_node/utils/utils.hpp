@@ -10,7 +10,8 @@ namespace gui_node
  *
  * @tparam T Data type to hold.
  */
-template <typename T> class FixedDeque : public std::deque<T>
+template <typename T>
+class FixedDeque : public std::deque<T>
 {
 private:
     size_t max_size; ///< Maximum size of the deque

@@ -91,8 +91,12 @@ public:
      * can be displayed.
      * @param imgui_callback Function to call when drawing the ImGui window.
      */
-    BaseVideoWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
-                    ConverterFunc frame_converter, std::function<void(void)> imgui_callback)
+    BaseVideoWidget(
+        std::shared_ptr<GuiNode> gui_node,
+        const std::string &window_name,
+        const std::string &ros_data_name,
+        ConverterFunc frame_converter,
+        std::function<void(void)> imgui_callback)
         : Widget(gui_node, window_name, ros_data_name), frame_converter(frame_converter)
     {
         this->imgui_callback = imgui_callback;
@@ -116,8 +120,11 @@ public:
      * @param frame_converter The frame converter function to convert the image to a sensor_msgs::msg::Image format that
      * can be displayed.
      */
-    VideoWidget(std::shared_ptr<GuiNode> gui_node, const std::string &window_name, const std::string &ros_data_name,
-                std::function<void(std::shared_ptr<GuiNode>, sensor_msgs::msg::Image &)> frame_converter)
+    VideoWidget(
+        std::shared_ptr<GuiNode> gui_node,
+        const std::string &window_name,
+        const std::string &ros_data_name,
+        std::function<void(std::shared_ptr<GuiNode>, sensor_msgs::msg::Image &)> frame_converter)
         : BaseVideoWidget(gui_node, window_name, ros_data_name, frame_converter, [](void) {})
     {
     }
