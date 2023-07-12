@@ -33,14 +33,15 @@ public:
         gui_node_ptr = std::make_shared<GuiNode>(options, "gui_node");
 
         // Create a string publisher
-        std::shared_ptr<RosStringPublisherData> string_publisher_data =
-            std::make_shared<RosStringPublisherData>(gui_node_ptr, "dateandtime",
-                                                     [](const std::string &date) -> std_msgs::msg::String
-                                                     {
-                                                         std_msgs::msg::String msg = std_msgs::msg::String();
-                                                         msg.data = date;
-                                                         return msg;
-                                                     });
+        std::shared_ptr<RosStringPublisherData> string_publisher_data = std::make_shared<RosStringPublisherData>(
+            gui_node_ptr,
+            "dateandtime",
+            [](const std::string &date) -> std_msgs::msg::String
+            {
+                std_msgs::msg::String msg = std_msgs::msg::String();
+                msg.data = date;
+                return msg;
+            });
         gui_node_ptr->addRosData("string_publisher", string_publisher_data);
 
         // Set the timer to publish the date and time
@@ -68,7 +69,8 @@ public:
 
         // Create a video frames publisher
         std::shared_ptr<RosImagePublisherData> video_publisher_data = std::make_shared<RosImagePublisherData>(
-            gui_node_ptr, "video",
+            gui_node_ptr,
+            "video",
             [this](const cv::Mat &frame) -> sensor_msgs::msg::Image
             {
                 sensor_msgs::msg::Image msg = sensor_msgs::msg::Image();
@@ -105,7 +107,8 @@ public:
 
         // Create the /counter RosData service server
         std::shared_ptr<RosCounterServerData> ros_server_data_ptr = std::make_shared<RosCounterServerData>(
-            gui_node_ptr, "/counter",
+            gui_node_ptr,
+            "/counter",
             [](std_srvs::srv::Trigger::Request::SharedPtr request,
                std_srvs::srv::Trigger::Response::SharedPtr response) -> std_srvs::srv::Trigger::Response::SharedPtr
             {

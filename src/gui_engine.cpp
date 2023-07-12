@@ -63,10 +63,11 @@ void VkDebugUtilsMessengerEXTDeleter::operator()(VkDebugUtilsMessengerEXT *messe
     }
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                                    __attribute__((unused)) void *pUserData)
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+    __attribute__((unused)) void *pUserData)
 {
     if (messageType != VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
     {
@@ -188,7 +189,9 @@ void GuiEngine::createPhysicalDevice()
     vkEnumeratePhysicalDevices(*getInstance().get(), &device_count, devices.data());
 
     std::vector<VkPhysicalDevice>::iterator it = std::find_if(
-        devices.begin(), devices.end(), [this](const VkPhysicalDevice &device) { return isDeviceSuitable(device); });
+        devices.begin(),
+        devices.end(),
+        [this](const VkPhysicalDevice &device) { return isDeviceSuitable(device); });
 
     if (it == devices.end())
     {
@@ -410,17 +413,18 @@ void GuiEngine::createDescriptorPool()
 {
     // TODO: This descriptor pool is not optimal.
     // It should be created based on the user's needs (number of textures, etc.)
-    VkDescriptorPoolSize pool_sizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-                                         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-                                         {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-                                         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-                                         {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-                                         {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-                                         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-                                         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-                                         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-                                         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-                                         {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+    VkDescriptorPoolSize pool_sizes[] = {
+        {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+        {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
     VkDescriptorPoolCreateInfo pool_info = {};
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
@@ -484,11 +488,11 @@ VkSurfaceFormatKHR GuiEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfac
         throw std::runtime_error("No available surface formats");
     }
 
-    auto it = std::find_if(available_formats.begin(), available_formats.end(),
-                           [](const VkSurfaceFormatKHR &format) {
-                               return format.format == VK_FORMAT_B8G8R8A8_SRGB &&
-                                      format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-                           });
+    auto it = std::find_if(
+        available_formats.begin(),
+        available_formats.end(),
+        [](const VkSurfaceFormatKHR &format)
+        { return format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; });
 
     if (it != available_formats.end())
     {
@@ -502,8 +506,10 @@ VkSurfaceFormatKHR GuiEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfac
 
 VkPresentModeKHR GuiEngine::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &available_present_modes)
 {
-    auto it = std::find_if(available_present_modes.begin(), available_present_modes.end(),
-                           [](const VkPresentModeKHR &mode) { return mode == VK_PRESENT_MODE_MAILBOX_KHR; });
+    auto it = std::find_if(
+        available_present_modes.begin(),
+        available_present_modes.end(),
+        [](const VkPresentModeKHR &mode) { return mode == VK_PRESENT_MODE_MAILBOX_KHR; });
 
     if (it != available_present_modes.end())
     {
@@ -613,8 +619,11 @@ SwapChainSupportDetails GuiEngine::querySwapChainSupport(const VkPhysicalDevice 
     if (present_mode_count != 0)
     {
         details.present_modes.resize(present_mode_count);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, *surface.get(), &present_mode_count,
-                                                  details.present_modes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device,
+            *surface.get(),
+            &present_mode_count,
+            details.present_modes.data());
     }
 
     return details;
@@ -686,9 +695,13 @@ void GuiEngine::draw()
     vkWaitForFences(*getDevice().get(), 1, in_flight_fences[current_frame].get(), VK_TRUE, UINT64_MAX);
 
     uint32_t image_index;
-    VkResult result =
-        vkAcquireNextImageKHR(*getDevice().get(), *swap_chain.get(), UINT64_MAX,
-                              *image_available_semaphores[current_frame].get(), VK_NULL_HANDLE, &image_index);
+    VkResult result = vkAcquireNextImageKHR(
+        *getDevice().get(),
+        *swap_chain.get(),
+        UINT64_MAX,
+        *image_available_semaphores[current_frame].get(),
+        VK_NULL_HANDLE,
+        &image_index);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -751,8 +764,10 @@ void GuiEngine::draw()
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void GuiEngine::framebufferResizeCallback(GLFWwindow *window, __attribute__((unused)) int width,
-                                          __attribute__((unused)) int height)
+void GuiEngine::framebufferResizeCallback(
+    GLFWwindow *window,
+    __attribute__((unused)) int width,
+    __attribute__((unused)) int height)
 {
     auto app = reinterpret_cast<GuiEngine *>(glfwGetWindowUserPointer(window));
     app->framebuffer_resized = true;
@@ -835,15 +850,21 @@ GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp
 {
 }
 
-GuiEngine::GuiEngine(const std::string &application_name, std::shared_ptr<rclcpp::Node> node,
-                     const std::vector<std::string> &device_extensions)
+GuiEngine::GuiEngine(
+    const std::string &application_name,
+    std::shared_ptr<rclcpp::Node> node,
+    const std::vector<std::string> &device_extensions)
     : application_name(application_name), device_extensions(device_extensions), node(node),
       imgui_engine(std::make_unique<ImGuiEngine>())
 {
 }
 
-bool GuiEngine::addTexture(const std::string &name, std::vector<unsigned char> image_data, int width, int height,
-                           int channels)
+bool GuiEngine::addTexture(
+    const std::string &name,
+    std::vector<unsigned char> image_data,
+    int width,
+    int height,
+    int channels)
 {
     if (!initialized)
     {
@@ -856,8 +877,9 @@ bool GuiEngine::addTexture(const std::string &name, std::vector<unsigned char> i
         RCLCPP_WARN(node->get_logger(), "Texture %s already exists!", name.c_str());
         return false;
     }
-    textures.emplace(name,
-                     std::make_shared<TextureLoader>(shared_from_this(), node, image_data, width, height, channels));
+    textures.emplace(
+        name,
+        std::make_shared<TextureLoader>(shared_from_this(), node, image_data, width, height, channels));
     textures[name]->init();
     return true;
 }
@@ -970,8 +992,13 @@ ImGuiEngine::~ImGuiEngine()
     ImGui::DestroyContext();
 }
 
-TextureLoader::TextureLoader(std::shared_ptr<GuiEngine> gui_engine, std::shared_ptr<rclcpp::Node> node,
-                             std::vector<unsigned char> image_data, int width, int height, int channels)
+TextureLoader::TextureLoader(
+    std::shared_ptr<GuiEngine> gui_engine,
+    std::shared_ptr<rclcpp::Node> node,
+    std::vector<unsigned char> image_data,
+    int width,
+    int height,
+    int channels)
     : channels(channels), height(height), width(width), gui_engine(gui_engine), image_data(image_data), node(node)
 {
 }
@@ -1154,8 +1181,17 @@ void TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     copy_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     copy_barrier.subresourceRange.levelCount = 1;
     copy_barrier.subresourceRange.layerCount = 1;
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                         nullptr, 1, &copy_barrier);
+    vkCmdPipelineBarrier(
+        command_buffer,
+        VK_PIPELINE_STAGE_HOST_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        &copy_barrier);
 
     VkBufferImageCopy region = {};
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1163,8 +1199,13 @@ void TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     region.imageExtent.width = width;
     region.imageExtent.height = height;
     region.imageExtent.depth = 1;
-    vkCmdCopyBufferToImage(command_buffer, *upload_buffer.get(), *image.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                           &region);
+    vkCmdCopyBufferToImage(
+        command_buffer,
+        *upload_buffer.get(),
+        *image.get(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region);
 
     VkImageMemoryBarrier use_barrier = {};
     use_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1178,8 +1219,17 @@ void TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     use_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     use_barrier.subresourceRange.levelCount = 1;
     use_barrier.subresourceRange.layerCount = 1;
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
-                         nullptr, 0, nullptr, 1, &use_barrier);
+    vkCmdPipelineBarrier(
+        command_buffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        &use_barrier);
 
     // End command buffer
     VkSubmitInfo submit_info{};

@@ -129,15 +129,19 @@ void BaseVideoWidget::resizeCallback(ImGuiSizeCallbackData *data)
 void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_loader)
 {
     WindowConfig window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(FLT_MAX, FLT_MAX), resizeCallback,
-                                        (void *)&window_configs);
+    ImGui::SetNextWindowSizeConstraints(
+        ImVec2(0, 0),
+        ImVec2(FLT_MAX, FLT_MAX),
+        resizeCallback,
+        (void *)&window_configs);
     ImGui::Begin(window_name.c_str(), NULL, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImVec2 view = ImGui::GetWindowSize();
     scale_factor = view.x / base_width;
     window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
     ImGui::SetWindowSize(window_configs.window_size, ImGuiCond_Once);
-    ImGui::Image((ImTextureID)texture_loader->getDescriptorSet(),
-                 ImVec2(view.x - window_configs.offset.x, view.y - window_configs.offset.y));
+    ImGui::Image(
+        (ImTextureID)texture_loader->getDescriptorSet(),
+        ImVec2(view.x - window_configs.offset.x, view.y - window_configs.offset.y));
     imgui_callback();
     ImGui::End();
 }

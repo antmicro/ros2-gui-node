@@ -6,8 +6,11 @@
 namespace gui_node
 {
 
-RosoutWidget::RosoutWidget(std::shared_ptr<GuiNode> gui_node_ptr, const std::string &window_name,
-                           const std::string &ros_data_name, int max_table_size)
+RosoutWidget::RosoutWidget(
+    std::shared_ptr<GuiNode> gui_node_ptr,
+    const std::string &window_name,
+    const std::string &ros_data_name,
+    int max_table_size)
     : Widget(gui_node_ptr, window_name, ros_data_name),
       messages(FixedDeque<rcl_interfaces::msg::Log::SharedPtr>(max_table_size))
 {

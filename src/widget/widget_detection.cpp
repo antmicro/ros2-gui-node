@@ -33,12 +33,15 @@ void DetectionWidget::imgui_callback()
     std::string filter_window_name = "Filter '" + window_name + "'";
     ImGui::Begin(filter_window_name.c_str());
     ImGui::SetWindowSize(ImVec2(500, 200), ImGuiCond_FirstUseEver);
-    ImGui::InputText("Class name", &filterclass, ImGuiInputTextFlags_CallbackCharFilter,
-                     [](ImGuiInputTextCallbackData *d) -> ImGuiInputTextFlags
-                     {
-                         ImWchar c = d->EventChar;
-                         return !(std::isalpha(c) || c == ' ');
-                     });
+    ImGui::InputText(
+        "Class name",
+        &filterclass,
+        ImGuiInputTextFlags_CallbackCharFilter,
+        [](ImGuiInputTextCallbackData *d) -> ImGuiInputTextFlags
+        {
+            ImWchar c = d->EventChar;
+            return !(std::isalpha(c) || c == ' ');
+        });
     ImGui::SliderFloat("Certainty threshold", &threshold, 0.0f, 100.0f, "%.1f%%");
     ImGui::BeginChild("scrolling");
     if (ImGui::BeginTable("Detections", 2))
@@ -65,8 +68,13 @@ void DetectionWidget::imgui_callback()
                 ImVec2 text_pos = ImVec2(x1 + cornerroundingfactor, y1 - ImGui::GetFontSize() - cornerroundingfactor);
                 label = bounding_box.object.label + " (" + std::to_string(bounding_box.object.score) + "%)";
 
-                draw_list->AddRect(ImVec2(x1, y1), ImVec2(x2, y2), bounding_box.object.color, cornerroundingfactor, 0,
-                                   perimeterthickness);
+                draw_list->AddRect(
+                    ImVec2(x1, y1),
+                    ImVec2(x2, y2),
+                    bounding_box.object.color,
+                    cornerroundingfactor,
+                    0,
+                    perimeterthickness);
                 draw_list->AddText(text_pos, bounding_box.object.color, label.c_str());
                 ImGui::SetWindowFontScale(1.0f);
             }
