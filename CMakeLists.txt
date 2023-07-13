@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 20)
 project(gui_node VERSION 0.0.1)
 
+option(BUILD_YOLACT_DEMO "Builds demo application running visualization of YOLACT instance segmentation with Kenning" OFF)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -15,7 +17,6 @@ find_package(rcl_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
-find_package(cvnode_msgs REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -82,29 +83,40 @@ ament_target_dependencies(sample_gui_node
 
 rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
 
-#######################
-# YolactGuiComponent
-#######################
-add_library(yolact_gui_node SHARED
-    src/samples/yolact_gui_node.cpp
-    src/widget/widget_video.cpp
-    src/widget/widget_detection.cpp
-)
+if (BUILD_YOLACT_DEMO)
+    # package with necessary messages to communicate with Kenning
+    find_package(cvnode_msgs REQUIRED)
 
-target_link_libraries(yolact_gui_node
-    gui_node
-    ${OpenCV_LIBS}
-)
+    #######################
+    # YolactGuiComponent
+    #######################
+    add_library(yolact_gui_node SHARED
+        examples/kenning-instance-segmentation/yolact_gui_node.cpp
+        src/widget/widget_video.cpp
+        src/widget/widget_detection.cpp
+    )
 
-ament_target_dependencies(yolact_gui_node
-    rcl_interfaces
-    rclcpp
-    rclcpp_components
-    sensor_msgs
-    cvnode_msgs
-)
+    target_link_libraries(yolact_gui_node
+        gui_node
+        ${OpenCV_LIBS}
+    )
 
-rclcpp_components_register_nodes(yolact_gui_node "gui_node::YolactGuiComponent")
+    ament_target_dependencies(yolact_gui_node
+        rcl_interfaces
+        rclcpp
+        rclcpp_components
+        sensor_msgs
+        cvnode_msgs
+    )
+
+    rclcpp_components_register_nodes(yolact_gui_node "gui_node::YolactGuiComponent")
+
+    install(TARGETS
+        yolact_gui_node
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+endif(BUILD_YOLACT_DEMO)
 
 #######################
 # SamplePublisherComponent
@@ -135,7 +147,6 @@ install(TARGETS
     gui_node
     sample_gui_node
     sample_publish_node
-    yolact_gui_node
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin

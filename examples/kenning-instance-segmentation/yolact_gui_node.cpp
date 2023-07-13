@@ -22,7 +22,7 @@ private:
     std::shared_ptr<GuiNode> gui_node_ptr; ///< Pointer to the GUI node
 
     /**
-     * Prepares the display of the yolact message.
+     * Prepares the display for the YOLACT message.
      *
      * @param yolact_msg The segmentation message.
      * @param bounding_boxes The vector of bounding boxes to fill.
