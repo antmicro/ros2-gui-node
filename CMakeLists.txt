@@ -116,6 +116,10 @@ if (BUILD_YOLACT_DEMO)
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
     )
+
+    install (FILES examples/kenning-instance-segmentation/kenning-instance-segmentation.py
+        DESTINATION share/${PROJECT_NAME}
+    )
 endif(BUILD_YOLACT_DEMO)
 
 #######################
