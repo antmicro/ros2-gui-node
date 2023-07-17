@@ -16,17 +16,16 @@ void DetectionWidget::imgui_callback()
     std::string label;
     ImColor color;
 
-    ImVec2 window_pos = ImGui::GetWindowPos();
-    ImVec2 window_size = ImGui::GetWindowSize();
     ImGuiStyle &style = ImGui::GetStyle();
-
     const int title_bar_size = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
     float cornerroundingfactor = base_cornerroundingfactor * scale_factor;
     float perimeterthickness = base_perimeterthickness * scale_factor;
-    float xmin = window_pos.x + style.WindowPadding.x;
-    float ymin = window_pos.y + style.WindowPadding.y + title_bar_size;
-    float xmax = window_pos.x + window_size.x - style.WindowPadding.x;
-    float ymax = window_pos.y + window_size.y - style.WindowPadding.y;
+
+    ImVec2 window_pos = ImGui::GetWindowPos();
+    ImVec2 window_size = ImGui::GetWindowSize();
+    window_size.x -= style.WindowPadding.x * 2;
+    window_size.y -= style.WindowPadding.y * 2 + title_bar_size;
+    ImVec2 offset = ImVec2(window_pos.x + style.WindowPadding.x, window_pos.y + style.WindowPadding.y + title_bar_size);
 
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
@@ -60,10 +59,10 @@ void DetectionWidget::imgui_callback()
                 (filterclass.empty() || class_name.find(filterclass) != std::string::npos))
             {
                 ImGui::SetWindowFontScale(window_size.x / 550);
-                x1 = std::max(bounding_box.xmin * window_size.x + window_pos.x, xmin);
-                y1 = std::max(bounding_box.ymin * window_size.y + window_pos.y, ymin);
-                x2 = std::min(bounding_box.xmax * window_size.x + window_pos.x, xmax);
-                y2 = std::min(bounding_box.ymax * window_size.y + window_pos.y, ymax);
+                x1 = bounding_box.xmin * window_size.x + offset.x;
+                y1 = bounding_box.ymin * window_size.y + offset.y;
+                x2 = bounding_box.xmax * window_size.x + offset.x;
+                y2 = bounding_box.ymax * window_size.y + offset.y;
 
                 ImVec2 text_pos = ImVec2(x1 + cornerroundingfactor, y1 - ImGui::GetFontSize() - cornerroundingfactor);
                 label = bounding_box.object.label + " (" + std::to_string(bounding_box.object.score) + "%)";
