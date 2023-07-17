@@ -67,9 +67,7 @@ private:
                 cv::Mat mask(550, 550, CV_8UC1, masks.data() + i * 550 * 550);
                 cv::resize(mask, mask, cv::Size(width, height));
                 cv::cvtColor(mask, mask, cv::COLOR_GRAY2BGR);
-                cv::Mat color(1, 1, CV_8UC3, colors[color_idx]);
-                cv::resize(color, color, cv::Size(width, height));
-                cv::bitwise_and(color, mask, mask);
+                mask.setTo(colors[color_idx], mask);
                 cv::addWeighted(mask, 0.4, frame, 1.0, 0, frame);
             }
         }
