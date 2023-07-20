@@ -34,6 +34,7 @@ def generate_launch_description():
                 name='sample_gui_node')
         ],
         output='both',
+        on_exit=launch.actions.Shutdown()
     )
 
     kenning_node = ExecuteProcess(
