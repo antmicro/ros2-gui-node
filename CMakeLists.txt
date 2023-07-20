@@ -94,6 +94,7 @@ if (BUILD_YOLACT_DEMO)
         examples/kenning-instance-segmentation/yolact_gui_node.cpp
         src/widget/widget_video.cpp
         src/widget/widget_detection.cpp
+        src/widget/widget_rosout.cpp
     )
 
     target_link_libraries(yolact_gui_node

@@ -8,6 +8,7 @@
 #include "gui_node/utils/detection.hpp"
 #include "gui_node/widget/widget_detection.hpp"
 #include "gui_node/widget/widget_video.hpp"
+#include "gui_node/widget/widget_rosout.hpp"
 
 namespace gui_node
 {
@@ -15,6 +16,8 @@ namespace gui_node
 using RosYolactSubscriberData = RosSubscriberData<cvnode_msgs::msg::SegmentationMsg, cvnode_msgs::msg::SegmentationMsg::SharedPtr>;
 using MsgImageSharedPtr = sensor_msgs::msg::Image::SharedPtr;
 using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
+using MsgRosoutSharedPtr = rcl_interfaces::msg::Log::SharedPtr;
+using RosRosoutSubscriberData = RosSubscriberData<rcl_interfaces::msg::Log, rcl_interfaces::msg::Log::SharedPtr>;
 
 class YolactGuiComponent
 {
@@ -99,6 +102,16 @@ public:
     YolactGuiComponent(const rclcpp::NodeOptions &options)
     {
         gui_node_ptr = std::make_shared<GuiNode>(options, "gui_node");
+
+        // Creates a /rosout RosData subscriber
+        std::shared_ptr<RosRosoutSubscriberData> subscriber_rosout = std::make_shared<RosRosoutSubscriberData>(
+            gui_node_ptr, "/rosout", [](const MsgRosoutSharedPtr msg) -> MsgRosoutSharedPtr { return msg; });
+        gui_node_ptr->addRosData("rosout_subscriber", subscriber_rosout);
+
+        // Adds a /rosout subscriber widget to the Node
+        std::shared_ptr<RosoutWidget> rosout_widget =
+            std::make_shared<RosoutWidget>(gui_node_ptr, "[Sub] /rosout logs", "rosout_subscriber", 10);
+        gui_node_ptr->addWidget("rosout_widget", rosout_widget);
 
         // Creates a camera_frame_kenning RosData subscriber
         std::shared_ptr<RosYolactSubscriberData> subscriber_yolact = std::make_shared<RosYolactSubscriberData>(
