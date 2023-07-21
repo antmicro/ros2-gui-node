@@ -1,6 +1,6 @@
 # Instance segmentation visualization with Kenning runtime
 
-Demo runs instance segmentation algorithm on frames from the camera and displays detected masks.
+This demo runs an instance segmentation algorithm on frames from the camera and displays detected masks.
 
 The demo consists of three nodes:
 
@@ -62,16 +62,16 @@ docker run -it \
     /bin/bash
 ```
 
-This command starts `kenning-ros2-environment` image with:
+This command starts a `kenning-ros2-environment` image with:
 
-* `--device=/dev/video0:/dev/video0` - adds camera device to container's context
+* `--device=/dev/video0:/dev/video0` - adds a camera device to container's context
 * `-v $(pwd):/data` - mounts current (`kenning-ros2-demo`) directory under `/data` directory in the container's context
 * `-v /tmp/.X11-unix/:/tmp/.X11-unix/` - passes directory with X11 socket to the container's context (to allow running GUI application)
 * `-e DISPLAY=$DISPLAY`, `-e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR` - adds X11-related environment variables
 * `--gpus='all,"capabilities=compute,utility,graphics,display"'` - adds GPUs to the container's context, for computing and displaying purposes
 
-After this, in the Docker container, you need to install graphics libraries for NVIDIA that match your host's drivers.
-To check the version of the NVIDIA drivers, run:
+Then, in the Docker container, you need to install graphics libraries for NVIDIA that match your host's drivers.
+To check the NVIDIA drivers version, run:
 
 ```bash
 nvidia-smi
@@ -79,13 +79,13 @@ nvidia-smi
 
 And check the `Driver version`.
 
-For example, for 530.41.03, install in the container:
+For example, for 530.41.03, install the following in the container:
 
 ```bash
 apt-get update && apt-get install libnvidia-gl-530
 ```
 
-In the end, go to the workspace directory in the container:
+Then, go to the workspace directory in the container:
 
 ```bash
 cd /data
@@ -93,7 +93,7 @@ cd /data
 
 ## Downloading the demo
 
-Download all of the dependencies using `repo` tool:
+Download all of the dependencies using the `repo` tool:
 
 ```bash
 repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-instance-segmentation/manifest.xml
@@ -110,7 +110,7 @@ In this example, let's use Apache TVM compiler to compile model for GPU.
 
 Since the container provides all of the necessary dependencies, you can only add the cloned `/data/kenning` repository to the `PYTHONPATH` variable
 
-First, let's install Kenning with necessary dependencies:
+First, let's install Kenning with its necessary dependencies:
 
 ```bash
 pip install --no-deps kenning/
@@ -119,8 +119,8 @@ pip install --no-deps kenning/
 After this, let's run the [scenario with YOLACT optimizations for GPU](https://github.com/antmicro/kenning/blob/main/scripts/jsonconfigs/yolact-tvm-gpu-detection.json).
 It will:
 
-* Load the model `yolact.onnx`, containing YOLACT implementation
-* Compile the model using TVM for CUDA-enabled GPU with CUDNN and CUBLAS libraries' support.
+* Load the `yolact.onnx` model, containing YOLACT implementation
+* Compile the model using TVM for CUDA-enabled GPU with support for CUDNN and CUBLAS libraries.
 
 ```bash
 cd kenning/
@@ -135,7 +135,7 @@ First of all, load the `setup.sh` script for ROS 2 tools, e.g.:
 source /opt/ros/setup.sh
 ```
 
-Then, build GUI node and Camera node with:
+Then, build the GUI node and the Camera node with:
 
 ```bash
 cd /data
@@ -144,20 +144,20 @@ colcon build --base-paths src --cmake-args -DBUILD_YOLACT_DEMO=y
 
 ## Running the demo
 
-In the end, to run the demo, load the ROS 2 environment including newly built packages:
+Then, to run the demo, load the ROS 2 environment including the newly built packages:
 
 ```bash
 source install/setup.sh
 ```
 
-And then launch Kenning, Camera node and GUI node using the launch file `kenning-instance-segmentation.py`:
+And then launch Kenning, Camera node, and GUI node using the launch file `kenning-instance-segmentation.py`:
 
 ```bash
 ros2 launch gui_node kenning-instance-segmentation.py
 ```
 
-After this, a GUI should appear, with:
+Finally, a GUI should appear, with:
 
 * Direct view from Camera node
 * Instance segmentation view based on predictions from Kenning
-* A widget visualizing list of detected objects, with a possibility to filter out not interesting classes.
+* A widget visualizing a list of detected objects, with a possibility to filter out not interesting classes.
