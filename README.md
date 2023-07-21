@@ -3,7 +3,7 @@
 Copyright (c) 2022-2023 [Antmicro](https://www.antmicro.com)
 
 `GuiNode` is a library for visualizing data from ROS2 topics and services.
-It provides tools for manipulating widgets and data objects, which can be used for data visualization.
+It provides tools for manipulating Widgets and data objects, which can be used for data visualization.
 The graphical user interface is implemented using the Vulkan API, GLFW3, and Dear ImGui libraries.
 
 ## GUI node examples
@@ -46,10 +46,10 @@ For more information about the samples, go to the `src/samples` directory.
 
 ## Widgets and RosData objects
 
-`GuiNode` offers a number of pre-implemented widgets which can be used to visualize the data.
+`GuiNode` offers a number of pre-implemented Widgets which can be used to visualize the data.
 Widgets are responsible for creating the GUI elements and displaying the data.
 
-The following widgets are already implemented in the `GuiNode`:
+The following Widgets are already implemented in the `GuiNode`:
 
 * `VideoWidget` - displays an image from the `sensor_msgs::msg::Image` message type.
 * `StringWidget` - displays the `std::string` data in a text box.
@@ -61,7 +61,7 @@ You should create the corresponding `RosData` object add it to the `GuiNode` bef
 
 The `RosData` objects are responsible for handling data from ROS2 topics or services.
 
-Below is an example of how to add the `RosoutWidget` widget to the `GuiNode` instance:
+Below is an example of how to add `RosoutWidget` to the `GuiNode` instance:
 
 ```cpp
 #include "gui_node/gui_node.hpp"
@@ -77,7 +77,7 @@ std::shared_ptr<RosRosoutSubscriberData> subscriber_rosout = std::make_shared<Ro
     gui_node_ptr, "/rosout", [](const MsgRosoutSharedPtr msg) -> MsgRosoutSharedPtr { return msg; });
 gui_node_ptr->addRosData("rosout_subscriber", subscriber_rosout);
 
-// Adds a /rosout subscriber widget to the Node
+// Adds a /rosout subscriber Widget to the Node
 std::shared_ptr<RosoutWidget> rosout_widget =
     std::make_shared<RosoutWidget>(gui_node_ptr, "[Sub] /rosout logs", "rosout_subscriber", 10);
 gui_node_ptr->addWidget("rosout_widget", rosout_widget);
@@ -95,21 +95,21 @@ gui_node_ptr->prepare("Window name");
 * `RosServiceServerData` - provides a service server that saves data from the last processed request.
 * `RosServiceClientData` - provides a service client that can be used to send a request to the server and save data from the response.
 
-For more information about `RosData` objects, see the `include/gui_node/ros_data` directory, and for more information about widgets, see the `include/gui_node/widget` directory.
+For more information about `RosData` objects, see the `include/gui_node/ros_data` directory, and for more information about Widgets, see the `include/gui_node/widget` directory.
 
 ## Implementing a Widget
 
 You can create Widgets by inheriting the `Widget` class and implementing the `draw` method.
-`GuiNode` calls a Widget's `draw` method every frame and the widget is responsible for displaying data and handling user input.
+`GuiNode` calls a Widget's `draw` method every frame and the Widget is responsible for displaying data and handling user input.
 
-### Creating a new widget
+### Creating a new Widget
 
-In this section, you will see how to create a new widget that displays a counter value and provides a button for incrementing it.
+In this section, you will see how to create a new Widget that displays a counter value and provides a button for incrementing it.
 
 The obligatory parameters for the `Widget` constructor are:
 * `gui_node` - a `GuiNode` shared pointer that will be used for logging and accessing `RosData` objects;
-* `window_name` - the name of the widget's window;
-* `ros_data_name` - a unique name of the `RosData` object that will be used to reference the object with data in the widget objects during render.
+* `window_name` - the name of the Widget's window;
+* `ros_data_name` - a unique name of the `RosData` object that will be used to reference the object with data in the Widget objects during render.
 
 A sample declaration of the `CounterWidget` class (the example can be found in `include/gui_node/widget/widget_counter.hpp` and `src/gui_node/widget/widget_counter.cpp` files):
 
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     * Draw the widget
+     * Draw the Widget
      */
     void draw() override {
         // Get the data
@@ -154,7 +154,7 @@ public:
             }
         }
 
-        // Draw the widget
+        // Draw the Widget
         ImGui::Begin(window_name.c_str());
         ImGui::SetWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize("Trigger").x) / 2);
@@ -187,22 +187,23 @@ public:
 } // namespace gui_node
 ```
 
-The overridden `draw` method is responsible for drawing the widget and called by the `GuiNode` every time the drawing loop is executed.
+The overridden `draw` method is responsible for drawing the Widget and called by the `GuiNode` every time the drawing loop is executed.
 Usually, the `draw` method uses the `getRosData` method of the `GuiNode` to get the `RosData` object, and later visualizes data from it.
 
-The `GuiEngine` class expects widgets to be drawn using the `Dear ImGui` library.
+The `GuiEngine` class expects Widgets to be drawn using the `Dear ImGui` library.
 
 The `draw` method obtains the `RosCounterClientData` object from the `GuiNode`, and verifies if the data has changed since the last invocation of the `draw` method.
-If the fresh data is available, the response is verified to be successful with counter value being incremented.
+If new data is available, the response is verified to be successful with counter value being incremented.
 
-In case the service is not available, the button is disabled.
-This is done to prevent the user from sending requests to the service server when it is not available, which would result in an error.
+When the service is not available, the button is disabled.
+This happens to prevent the user from sending requests to the service server when it is not available, which would result in an error.
 
-### Adding the widget to the sample node
+### Adding the Widget to the sample node
 
-The `src/samples/` directory contains examples on how to implement the ROS2 component node and integrate it with the `GuiNode`, and can be used as a reference for creating new nodes.
+The `src/samples/` directory contains examples on how to implement the ROS2 component node and integrate it with the `GuiNode`. 
+It can be used as a reference for creating new nodes.
 
-In this section, the `CounterWidget` widget is added to the `src/samples/sample_gui_node.cpp` file by following an example from the [Widgets and RosData objects](#widgets-and-rosdata-objects) section:
+In this section, the `CounterWidget` Widget is added to the `src/samples/sample_gui_node.cpp` file by following an example from the [Widgets and RosData objects](#widgets-and-rosdata-objects) section:
 ```cpp
 #include <std_srvs/srv/trigger.hpp>
 #include "gui_node/widget/widget_counter.hpp"
@@ -224,7 +225,7 @@ SampleGuiComponent(const rclcpp::NodeOptions &options)
         { return response; });
     gui_node_ptr->addRosData("counter_service", client_counter);
 
-    // Create a counter widget
+    // Create a counter Widget
     std::shared_ptr<CounterWidget> counter_widget =
         std::make_shared<CounterWidget>(gui_node_ptr, "[Client] Counter", "counter_service");
     gui_node_ptr->addWidget("counter_widget", counter_widget);
@@ -235,7 +236,7 @@ SampleGuiComponent(const rclcpp::NodeOptions &options)
 ...
 ```
 
-This code creates a `RosData` service client object, which is responsible for sending requests to the `/counter` service server and receiving responses.
+This code creates a `RosData` service client object responsible for sending requests to the `/counter` service server and receiving responses.
 The `CounterWidget` object is created and added to the `GuiNode` using the `addWidget` method.
 
 Without the `/counter` server, the increment button will be disabled.
@@ -273,7 +274,7 @@ SampleGuiComponent(const rclcpp::NodeOptions &options)
 
 This code creates a `RosData` service server object which is responsible for receiving requests from the `/counter` service client and sending back responses.
 
-Now, you can build and run the sample GUI node with the widget working as expected:
+Now, you can build and run the sample GUI node with the Widget working as expected:
 
 ```bash
 source <path_to_ros2_env>
