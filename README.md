@@ -6,6 +6,11 @@ Copyright (c) 2022-2023 [Antmicro](https://www.antmicro.com)
 It provides tools for manipulating widgets and data objects, which can be used for data visualization.
 The graphical user interface is implemented using the Vulkan API, GLFW3, and Dear ImGui libraries.
 
+## GUI node examples
+
+* [Kenning instance segmentation](examples/kenning-instance-segmentation/) - runs GUI node visualizing instance segmentation from YOLACT optimized using Kenning framework.
+* [Simple GUI node demonstration, built with the project](src/samples/sample_gui_node.cpp)
+
 ## Building the GuiNode
 
 Project dependencies:
