@@ -8,41 +8,57 @@ The demo consists of three nodes:
 * GUI node - renders a window with camera view, instance segmentation view, and additional logs
 * Instance segmentation node - Kenning-based node reading frames from the Camera node, running YOLACT instance segmentation model, and sending predictions to the GUI node
 
+## Necessary dependencies
+
 This demo requires:
 
-* Connected camera
-* ROS 2 environment installed in the system
-* `repo` tool for obtaining necessary repositories
+* A camera for streaming frames
+* A [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) for cloning all of the necessary repositories
+* [Docker](https://www.docker.com/) to use a prepared environment
 
-## Preparing the Docker environment
+All of the necessary build, runtime and development dependencies are provided in the [Dockerfile](./Dockerfile).
+It contains:
 
-Necessary environment to run the ROS 2 demo can be found in the [Dockerfile](./Dockerfile).
-It provides all of the necessary libraries to get started with Kenning and ROS 2 runtime and compilation (with some additional helper tools for faster development).
+* [ROS 2 Humble](https://docs.ros.org/en/humble/index.html) environment
+* [OpenCV](https://github.com/opencv/opencv) for image processing
+* [Apache TVM](https://github.com/apache/tvm) for model optimization and runtime
+* Dependencies for the [Kenning framework](https://github.com/antmicro/kenning)
+* CUDNN and CUDA libraries for faster acceleration on GPUs
+* Development tools
 
-To build the Docker image, run:
+It can be either pulled from Docker registry using:
+
+```bash
+docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
+```
+
+or built from scratch with:
 
 ```bash
 sudo docker build -t kenning-ros2-environment .
 ```
 
-It will build a CUDA-enabled image with:
+## Downloading the demo
 
-* [ROS 2 Humble](https://docs.ros.org/en/humble/index.html) environment - follow [installation instructions](https://docs.ros.org/en/humble/Installation.html) for your system
-* [OpenCV](https://github.com/opencv/opencv) - can be installed with package manager.
-* [Apache TVM](https://github.com/apache/tvm) framework for model optimization and runtime
-* Dependencies for compiling and running the YOLACT model
-* CUDNN for faster acceleration on GPUs
+First off, let's create a workspace directory, where downloaded repositories will be stored:
+
+```bash
+mkdir kenning-ros2-demo && cd kenning-ros2-demo
+```
+
+Then, download all of the dependencies using the `repo` tool:
+
+```bash
+repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-instance-segmentation/manifest.xml
+
+repo sync -j12
+
+repo forall git lfs pull
+```
 
 ## Starting the Docker environment
 
-First of, let's create a workspace directory which will store persistent files with the repositories and binaries:
-
-```bash
-mkdir kenning-ros2-demo
-cd kenning-ros2-demo
-```
-
-Secondly, let's allow non-network local connections to X11 so that GUI can be started from Docker container:
+In the beginning, if the Docker container is used, let's allow non-network local connections to X11 so that GUI can be started from the Docker container:
 
 ```bash
 xhost +local:
@@ -51,18 +67,13 @@ xhost +local:
 Thirdly, let's run a Docker container with:
 
 ```bash
-docker run -it \
-    --device=/dev/video0:/dev/video0 \
-    -v $(pwd):/data \
-    -v /tmp/.X11-unix/:/tmp/.X11-unix/ \
-    --gpus='all,"capabilities=compute,utility,graphics,display"' \
-    -e DISPLAY=$DISPLAY \
-    -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
-    kenning-ros2-environment \
-    /bin/bash
+./run-docker.sh
 ```
 
-This command starts a `kenning-ros2-environment` image with:
+`NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-environment`, run `DOCKER_IMAGE=kenning-ros2-environment ./run-docker.sh`.
+Also, if you want to change the camera path, set `CAMERA_PATH` variable with desired path before running the script.
+
+This script starts the  image with:
 
 * `--device=/dev/video0:/dev/video0` - adds a camera device to container's context
 * `-v $(pwd):/data` - mounts current (`kenning-ros2-demo`) directory under `/data` directory in the container's context
@@ -91,24 +102,10 @@ Then, go to the workspace directory in the container:
 cd /data
 ```
 
-## Downloading the demo
-
-Download all of the dependencies using the `repo` tool:
-
-```bash
-repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-instance-segmentation/manifest.xml
-
-repo sync -j12
-
-repo forall git lfs pull
-```
-
 ## Optimizing the YOLACT model with Kenning
 
 To get real-time performance of the runtime, you need to first optimize YOLACT model for your machine.
 In this example, let's use Apache TVM compiler to compile model for GPU.
-
-Since the container provides all of the necessary dependencies, you can only add the cloned `/data/kenning` repository to the `PYTHONPATH` variable
 
 First, let's install Kenning with its necessary dependencies:
 
@@ -124,7 +121,7 @@ It will:
 
 ```bash
 cd kenning/
-kenning optimize  --json-cfg scripts/jsonconfigs/yolact-tvm-gpu-detection.json --verbosity INFO
+kenning optimize  --json-cfg scripts/jsonconfigs/yolact-tvm-gpu-detection.json
 ```
 
 ## Building GUI node and Camera node
@@ -150,10 +147,16 @@ Then, to run the demo, load the ROS 2 environment including the newly built pack
 source install/setup.sh
 ```
 
-And then launch Kenning, Camera node, and GUI node using the launch file `kenning-instance-segmentation.py`:
+After this, launch Kenning, Camera node, and GUI node using the launch file `kenning-instance-segmentation.py`:
 
 ```bash
 ros2 launch gui_node kenning-instance-segmentation.py
+```
+
+In case you want to change the path to the camera, use `camera_path:=<new-path>` argument, e.g.:
+
+```bash
+ros2 launch gui_node kenning-instance-segmentation.py camera_path:=/dev/video1
 ```
 
 Finally, a GUI should appear, with:
