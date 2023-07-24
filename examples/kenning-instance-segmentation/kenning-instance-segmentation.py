@@ -2,9 +2,16 @@ import launch
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 from launch.actions import ExecuteProcess
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    camera_path = DeclareLaunchArgument(
+        "camera_path",
+        default_value="/dev/video0",
+        description="Path to camera device"
+    )
     camera_node_container = ComposableNodeContainer(
         name='camera_node_container',
         namespace='camera_node',
@@ -15,9 +22,10 @@ def generate_launch_description():
                 package='camera_node',
                 plugin='camera_node::CameraNode',
                 name='camera_node',
-                parameters=[{
-                    'camera_path': '/dev/video0'
-                }]),
+                parameters=[
+                    {'camera_path': LaunchConfiguration("camera_path")}
+                ]
+            ),
         ],
         output='both',
     )
@@ -44,6 +52,7 @@ def generate_launch_description():
     )
 
     return launch.LaunchDescription([
+        camera_path,
         camera_node_container,
         gui_node,
         kenning_node,
