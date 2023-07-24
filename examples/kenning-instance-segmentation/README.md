@@ -27,9 +27,9 @@ sudo docker build -t kenning-ros2-environment .
 
 It will build a CUDA-enabled image with:
 
-* ROS 2
-* OpenCV
-* Apache TVM framework for model optimization and runtime
+* [ROS 2 Humble](https://docs.ros.org/en/humble/index.html) environment - follow [installation instructions](https://docs.ros.org/en/humble/Installation.html) for your system
+* [OpenCV](https://github.com/opencv/opencv) - can be installed with package manager.
+* [Apache TVM](https://github.com/apache/tvm) framework for model optimization and runtime
 * Dependencies for compiling and running the YOLACT model
 * CUDNN for faster acceleration on GPUs
 
