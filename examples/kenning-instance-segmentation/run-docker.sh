@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (c) 2022-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # This script runs the Docker container for ROS 2 and Kenning integration
 
 CAMERA_PATH=${CAMERA_PATH:-/dev/video0}
