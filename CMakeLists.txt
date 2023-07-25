@@ -99,6 +99,8 @@ if (BUILD_YOLACT_DEMO)
         src/widget/widget_video.cpp
         src/widget/widget_detection.cpp
         src/widget/widget_rosout.cpp
+        src/widget/widget_control.cpp
+        ${IMGUI_SOURCES}
     )
 
     target_link_libraries(yolact_gui_node

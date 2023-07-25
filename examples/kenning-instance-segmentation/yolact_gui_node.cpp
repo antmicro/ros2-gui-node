@@ -16,6 +16,7 @@
 #include "gui_node/widget/widget_detection.hpp"
 #include "gui_node/widget/widget_rosout.hpp"
 #include "gui_node/widget/widget_video.hpp"
+#include "gui_node/widget/widget_control.hpp"
 
 namespace gui_node
 {
@@ -192,6 +193,12 @@ public:
                 msg = *subscriber_video->getData().get();
             });
         gui_node_ptr->addWidget("video_widget", video_widget);
+
+        // Create a widget to control parameters of the CameraNode
+        std::shared_ptr<ControlWidget> control_widget = std::make_shared<ControlWidget>(
+            gui_node_ptr, "[Control] Camera node", "camera_node");
+        gui_node_ptr->addWidget("control_widget", control_widget);
+
         gui_node_ptr->prepare("Yolact GUI Node");
     }
 
