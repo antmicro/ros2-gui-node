@@ -89,7 +89,7 @@ rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
 
 if (BUILD_YOLACT_DEMO)
     # package with necessary messages to communicate with Kenning
-    find_package(cvnode_msgs REQUIRED)
+    find_package(kenning_computer_vision_msgs REQUIRED)
 
     #######################
     # YolactGuiComponent
@@ -113,7 +113,7 @@ if (BUILD_YOLACT_DEMO)
         rclcpp
         rclcpp_components
         sensor_msgs
-        cvnode_msgs
+        kenning_computer_vision_msgs
     )
 
     rclcpp_components_register_nodes(yolact_gui_node "gui_node::YolactGuiComponent")

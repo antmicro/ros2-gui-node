@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <cvnode_msgs/msg/box_msg.hpp>
-#include <cvnode_msgs/msg/segmentation_msg.hpp>
+#include <kenning_computer_vision_msgs/msg/box_msg.hpp>
+#include <kenning_computer_vision_msgs/msg/segmentation_msg.hpp>
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -22,7 +22,7 @@ namespace gui_node
 {
 
 using RosYolactSubscriberData =
-    RosSubscriberData<cvnode_msgs::msg::SegmentationMsg, cvnode_msgs::msg::SegmentationMsg::SharedPtr>;
+    RosSubscriberData<kenning_computer_vision_msgs::msg::SegmentationMsg, kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr>;
 using MsgImageSharedPtr = sensor_msgs::msg::Image::SharedPtr;
 using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
 using MsgRosoutSharedPtr = rcl_interfaces::msg::Log::SharedPtr;
@@ -43,12 +43,12 @@ private:
      * @return sensor_msgs::msg::Image The image to display.
      */
     sensor_msgs::msg::Image prep_display(
-        cvnode_msgs::msg::SegmentationMsg::SharedPtr yolact_msg,
+        kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr yolact_msg,
         std::vector<BoundingBox> &bounding_boxes,
         const std::string &filterclass,
         const float &threshold)
     {
-        cvnode_msgs::msg::BoxMsg box;
+        kenning_computer_vision_msgs::msg::BoxMsg box;
         float score;
         int color_idx;
         std::string class_name;
@@ -150,7 +150,7 @@ public:
         std::shared_ptr<RosYolactSubscriberData> subscriber_yolact = std::make_shared<RosYolactSubscriberData>(
             gui_node_ptr,
             "camera_frame_kenning",
-            [](const cvnode_msgs::msg::SegmentationMsg::SharedPtr msg) -> cvnode_msgs::msg::SegmentationMsg::SharedPtr
+            [](const kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr msg) -> kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr
             { return msg; });
         gui_node_ptr->addRosData("yolact_subscriber", subscriber_yolact);
 
@@ -168,7 +168,7 @@ public:
             {
                 std::shared_ptr<RosYolactSubscriberData> subscriber_yolact =
                     gui_node_ptr->getRosData("yolact_subscriber")->as<RosYolactSubscriberData>();
-                cvnode_msgs::msg::SegmentationMsg::SharedPtr yolact_msg = subscriber_yolact->getData();
+                kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr yolact_msg = subscriber_yolact->getData();
 
                 msg = prep_display(yolact_msg, boxes, filterclass, threshold);
             });
