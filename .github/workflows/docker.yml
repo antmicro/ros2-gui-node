@@ -1,0 +1,35 @@
+name: Publish Docker image for demo
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    PublishDocker:
+        runs-on: ubuntu-latest
+
+        steps:
+            # - name: Cancel previous
+            #   uses: styfle/cancel-workflow-action@0.11.0
+            #   with:
+            #       access_token: ${{ github.token }}
+            - name: Checkout sources
+              uses: actions/checkout@v3
+              with:
+                  submodules: 'recursive'
+            - name: Build Docker image
+              run: ./examples/kenning-instance-segmentation/build-docker.sh
+            - name: Login to registry
+              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+              uses: docker/login-action@v2
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ github.token }}
+            - name: Push image to registry
+              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+              run: docker push ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
