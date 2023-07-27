@@ -136,7 +136,7 @@ Then, build the GUI node and the Camera node with:
 
 ```bash
 cd /data
-colcon build --base-paths src --cmake-args -DBUILD_YOLACT_DEMO=y
+colcon build --base-paths src --cmake-args -DBUILD_KENNING_YOLACT_DEMO=y
 ```
 
 ## Running the demo

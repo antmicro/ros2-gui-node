@@ -44,7 +44,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='gui_node',
-                plugin='gui_node::YolactGuiComponent',
+                plugin='gui_node::KenningYolactGuiComponent',
                 name='sample_gui_node')
         ],
         output='both',

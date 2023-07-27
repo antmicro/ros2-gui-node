@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 20)
 project(gui_node VERSION 0.0.1)
 
-option(BUILD_YOLACT_DEMO "Builds demo application running visualization of YOLACT instance segmentation with Kenning" OFF)
+option(BUILD_KENNING_YOLACT_DEMO "Builds demo application running visualization of YOLACT instance segmentation with Kenning" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -87,15 +87,15 @@ ament_target_dependencies(sample_gui_node
 
 rclcpp_components_register_nodes(sample_gui_node "gui_node::SampleGuiComponent")
 
-if (BUILD_YOLACT_DEMO)
+if (BUILD_KENNING_YOLACT_DEMO)
     # package with necessary messages to communicate with Kenning
     find_package(kenning_computer_vision_msgs REQUIRED)
 
     #######################
-    # YolactGuiComponent
+    # KenningYolactGuiComponent
     #######################
-    add_library(yolact_gui_node SHARED
-        examples/kenning-instance-segmentation/yolact_gui_node.cpp
+    add_library(kenning_yolact_gui_node SHARED
+        examples/kenning-instance-segmentation/kenning_yolact_gui_node.cpp
         src/widget/widget_video.cpp
         src/widget/widget_detection.cpp
         src/widget/widget_rosout.cpp
@@ -103,12 +103,12 @@ if (BUILD_YOLACT_DEMO)
         ${IMGUI_SOURCES}
     )
 
-    target_link_libraries(yolact_gui_node
+    target_link_libraries(kenning_yolact_gui_node
         gui_node
         ${OpenCV_LIBS}
     )
 
-    ament_target_dependencies(yolact_gui_node
+    ament_target_dependencies(kenning_yolact_gui_node
         rcl_interfaces
         rclcpp
         rclcpp_components
@@ -116,10 +116,10 @@ if (BUILD_YOLACT_DEMO)
         kenning_computer_vision_msgs
     )
 
-    rclcpp_components_register_nodes(yolact_gui_node "gui_node::YolactGuiComponent")
+    rclcpp_components_register_nodes(kenning_yolact_gui_node "gui_node::KenningYolactGuiComponent")
 
     install(TARGETS
-        yolact_gui_node
+        kenning_yolact_gui_node
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
     )
@@ -127,7 +127,7 @@ if (BUILD_YOLACT_DEMO)
     install (FILES examples/kenning-instance-segmentation/kenning-instance-segmentation.py
         DESTINATION share/${PROJECT_NAME}
     )
-endif(BUILD_YOLACT_DEMO)
+endif(BUILD_KENNING_YOLACT_DEMO)
 
 #######################
 # SamplePublisherComponent

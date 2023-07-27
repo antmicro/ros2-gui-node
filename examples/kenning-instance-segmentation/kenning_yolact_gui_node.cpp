@@ -21,29 +21,29 @@
 namespace gui_node
 {
 
-using RosYolactSubscriberData =
+using RosSegmentationSubscriberData =
     RosSubscriberData<kenning_computer_vision_msgs::msg::SegmentationMsg, kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr>;
 using MsgImageSharedPtr = sensor_msgs::msg::Image::SharedPtr;
 using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
 using MsgRosoutSharedPtr = rcl_interfaces::msg::Log::SharedPtr;
 using RosRosoutSubscriberData = RosSubscriberData<rcl_interfaces::msg::Log, rcl_interfaces::msg::Log::SharedPtr>;
 
-class YolactGuiComponent
+class KenningYolactGuiComponent
 {
 private:
     std::shared_ptr<GuiNode> gui_node_ptr; ///< Pointer to the GUI node
 
     /**
-     * Prepares the display for the YOLACT message.
+     * Prepares the display for the Kenning's instance segmentation message.
      *
-     * @param yolact_msg The segmentation message.
+     * @param instance_segmentation_msg The segmentation message.
      * @param bounding_boxes The vector of bounding boxes to fill.
      * @param filterclass The class to filter masks by.
      * @param threshold The threshold to filter masks by.
      * @return sensor_msgs::msg::Image The image to display.
      */
     sensor_msgs::msg::Image prep_display(
-        kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr yolact_msg,
+        kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr instance_segmentation_msg,
         std::vector<BoundingBox> &bounding_boxes,
         const std::string &filterclass,
         const float &threshold)
@@ -53,17 +53,17 @@ private:
         int color_idx;
         std::string class_name;
 
-        int height = yolact_msg->frame.height;
-        int width = yolact_msg->frame.width;
+        int height = instance_segmentation_msg->frame.height;
+        int width = instance_segmentation_msg->frame.width;
 
-        cv::Mat frame(height, width, CV_8UC3, yolact_msg->frame.data.data());
+        cv::Mat frame(height, width, CV_8UC3, instance_segmentation_msg->frame.data.data());
 
-        for (size_t i = 0; i < yolact_msg->boxes.size(); i++)
+        for (size_t i = 0; i < instance_segmentation_msg->boxes.size(); i++)
         {
-            class_name = yolact_msg->classes[i];
-            score = yolact_msg->scores[i] * 100;
+            class_name = instance_segmentation_msg->classes[i];
+            score = instance_segmentation_msg->scores[i] * 100;
             color_idx = i % im_colors.size();
-            box = yolact_msg->boxes[i];
+            box = instance_segmentation_msg->boxes[i];
             bounding_boxes.push_back(
                 BoundingBox(box.xmin, box.ymin, box.xmax, box.ymax, class_name, score, im_colors[color_idx]));
 
@@ -72,17 +72,17 @@ private:
             {
                 // Apply mask
                 cv::Mat mask(
-                    yolact_msg->masks[i].dimension[0],
-                    yolact_msg->masks[i].dimension[1],
+                    instance_segmentation_msg->masks[i].dimension[0],
+                    instance_segmentation_msg->masks[i].dimension[1],
                     CV_8UC1,
-                    yolact_msg->masks[i].data.data());
+                    instance_segmentation_msg->masks[i].data.data());
                 cv::resize(mask, mask, cv::Size(width, height));
                 cv::cvtColor(mask, mask, cv::COLOR_GRAY2BGR);
                 mask.setTo(colors[color_idx], mask);
                 cv::addWeighted(mask, 0.4, frame, 1.0, 0, frame);
             }
         }
-        return yolact_msg->frame;
+        return instance_segmentation_msg->frame;
     }
 
     /// ImGui color definitions
@@ -130,7 +130,7 @@ private:
         cv::Scalar(139, 125, 96)};
 
 public:
-    YolactGuiComponent(const rclcpp::NodeOptions &options)
+    KenningYolactGuiComponent(const rclcpp::NodeOptions &options)
     {
         gui_node_ptr = std::make_shared<GuiNode>(options, "gui_node");
 
@@ -147,18 +147,18 @@ public:
         gui_node_ptr->addWidget("rosout_widget", rosout_widget);
 
         // Creates a camera_frame_kenning RosData subscriber
-        std::shared_ptr<RosYolactSubscriberData> subscriber_yolact = std::make_shared<RosYolactSubscriberData>(
+        std::shared_ptr<RosSegmentationSubscriberData> subscriber_instance_segmentation = std::make_shared<RosSegmentationSubscriberData>(
             gui_node_ptr,
             "camera_frame_kenning",
             [](const kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr msg) -> kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr
             { return msg; });
-        gui_node_ptr->addRosData("yolact_subscriber", subscriber_yolact);
+        gui_node_ptr->addRosData("instance_segmentation_subscriber", subscriber_instance_segmentation);
 
-        // Creates widget for displaying YOLACT output
-        std::shared_ptr<DetectionWidget> yolact_widget = std::make_shared<DetectionWidget>(
+        // Creates widget for displaying Kenning Instance Segmentation output
+        std::shared_ptr<DetectionWidget> instance_segmentation_widget = std::make_shared<DetectionWidget>(
             gui_node_ptr,
-            "[Sub] Yolact stream",
-            "yolact_subscriber",
+            "[Sub] Instance Segmentation stream",
+            "instance_segmentation_subscriber",
             [this](
                 std::shared_ptr<GuiNode> gui_node_ptr,
                 sensor_msgs::msg::Image &msg,
@@ -166,13 +166,13 @@ public:
                 const std::string &filterclass,
                 const float &threshold) -> void
             {
-                std::shared_ptr<RosYolactSubscriberData> subscriber_yolact =
-                    gui_node_ptr->getRosData("yolact_subscriber")->as<RosYolactSubscriberData>();
-                kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr yolact_msg = subscriber_yolact->getData();
+                std::shared_ptr<RosSegmentationSubscriberData> subscriber_instance_segmentation =
+                    gui_node_ptr->getRosData("instance_segmentation_subscriber")->as<RosSegmentationSubscriberData>();
+                kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr instance_segmentation_msg = subscriber_instance_segmentation->getData();
 
-                msg = prep_display(yolact_msg, boxes, filterclass, threshold);
+                msg = prep_display(instance_segmentation_msg, boxes, filterclass, threshold);
             });
-        gui_node_ptr->addWidget("yolact_widget", yolact_widget);
+        gui_node_ptr->addWidget("instance_segmentation_widget", instance_segmentation_widget);
 
         // Creates a /camera_frame RosData subscriber
         std::shared_ptr<RosImageSubscriberData> subscriber_video = std::make_shared<RosImageSubscriberData>(
@@ -199,7 +199,7 @@ public:
             gui_node_ptr, "[Control] Camera node", "camera_node");
         gui_node_ptr->addWidget("control_widget", control_widget);
 
-        gui_node_ptr->prepare("Yolact GUI Node");
+        gui_node_ptr->prepare("Kenning Instance Segmentation GUI Node");
     }
 
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface()
@@ -212,4 +212,4 @@ public:
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(gui_node::YolactGuiComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(gui_node::KenningYolactGuiComponent)
