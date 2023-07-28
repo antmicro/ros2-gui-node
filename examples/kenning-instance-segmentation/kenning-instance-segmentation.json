@@ -28,7 +28,7 @@
         "type": "kenning.runtimes.tvm.TVMRuntime",
         "parameters":
         {
-          "save_model_path": "./build/compiled-model.tar",
+          "save_model_path": "./build/compiled-model.so",
           "target_device_context": "cuda",
           "runtime_use_vm": false
         }

@@ -19,7 +19,7 @@
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
                 "target_host": null,
-                "compiled_model_path": "./build/compiled-model.tar"
+                "compiled_model_path": "./build/compiled-model.so"
             }
         }
     ]
