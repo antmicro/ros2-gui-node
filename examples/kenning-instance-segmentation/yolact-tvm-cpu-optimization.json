@@ -1,0 +1,26 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",
+        "parameters":
+        {
+            "model_path": "kenning:///models/instance_segmentation/yolact.onnx"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters":
+            {
+                "model_framework": "onnx",
+                "target": "llvm -mcpu=core-avx2",
+                "opt_level": 3,
+                "compile_use_vm": false,
+                "output_conversion_function": "default",
+                "target_host": null,
+                "compiled_model_path": "./build/compiled-model.so"
+            }
+        }
+    ]
+}
