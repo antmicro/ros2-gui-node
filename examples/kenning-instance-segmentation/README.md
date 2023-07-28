@@ -120,8 +120,7 @@ It will:
 * Compile the model using TVM for CUDA-enabled GPU with support for CUDNN and CUBLAS libraries.
 
 ```bash
-cd kenning/
-kenning optimize  --json-cfg scripts/jsonconfigs/yolact-tvm-gpu-detection.json
+kenning optimize  --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
 ```
 
 ## Building GUI node and Camera node

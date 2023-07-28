@@ -53,8 +53,7 @@ def generate_launch_description():
 
     kenning_node = ExecuteProcess(
         name="kenning_node",
-        cmd='kenning flow --json-cfg ./scripts/jsonflowconfigs/ros2/yolact-ros2-realtime-segmentation.json'.split(' '),  # noqa: E501
-        cwd="./kenning"
+        cmd='kenning flow --json-cfg ./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.json'.split(' ')  # noqa: E501
     )
 
     return launch.LaunchDescription([
