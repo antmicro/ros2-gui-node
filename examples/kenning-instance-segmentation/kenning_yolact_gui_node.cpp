@@ -146,10 +146,10 @@ public:
             std::make_shared<RosoutWidget>(gui_node_ptr, "[Sub] /rosout logs", "rosout_subscriber", 10);
         gui_node_ptr->addWidget("rosout_widget", rosout_widget);
 
-        // Creates a camera_frame_kenning RosData subscriber
+        // Creates a subscriber for instance segmentation results
         std::shared_ptr<RosSegmentationSubscriberData> subscriber_instance_segmentation = std::make_shared<RosSegmentationSubscriberData>(
             gui_node_ptr,
-            "camera_frame_kenning",
+            "instance_segmentation_kenning",
             [](const kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr msg) -> kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr
             { return msg; });
         gui_node_ptr->addRosData("instance_segmentation_subscriber", subscriber_instance_segmentation);
