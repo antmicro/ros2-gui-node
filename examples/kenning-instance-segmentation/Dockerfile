@@ -140,7 +140,7 @@ RUN mkdir -p /ros2-build/src && \
     rm -rf /ros2-build
 
 COPY ./third-party/tvm /tvm
-COPY ./third-party/tvm-config.cmake /tvm-config.cmake
+COPY ./tvm-config.cmake /tvm-config.cmake
 RUN cd /tvm && \
     mkdir build && cd build && \
     cp /tvm-config.cmake config.cmake && \
