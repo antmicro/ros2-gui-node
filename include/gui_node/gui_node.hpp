@@ -139,9 +139,9 @@ public:
      * Prepares the GuiEngine for rendering.
      *
      * @param application_name Name of the application.
+     * @param maximize_window Maximizes the window on startup.
      */
-    void prepare(const std::string &application_name);
-
+    void prepare(const std::string &application_name, bool maximize_window = true);
     /**
      * Renders the frame using defined widgets.
      *

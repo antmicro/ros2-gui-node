@@ -50,10 +50,10 @@ void GuiNode::addWidget(const std::string &widget_name, std::shared_ptr<Widget> 
     widget_map.emplace(widget_name, widget);
 }
 
-void GuiNode::prepare(const std::string &application_name)
+void GuiNode::prepare(const std::string &application_name, bool maximize_window)
 {
     gui_engine = std::make_shared<GuiEngine>(application_name, shared_from_this());
-    gui_engine->init();
+    gui_engine->init(maximize_window);
     timer = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&GuiNode::render, this));
 }
 

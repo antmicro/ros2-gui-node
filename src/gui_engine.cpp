@@ -785,11 +785,15 @@ void GLFWwindowDeleter::operator()(GLFWwindow *window) const
     glfwTerminate();
 }
 
-void GuiEngine::initGLFW()
+void GuiEngine::initGLFW(bool maximize)
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = GLFWwindowUniquePtr(glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr));
+    if (maximize)
+    {
+        glfwMaximizeWindow(getWindow());
+    }
     glfwSetWindowUserPointer(getWindow(), this);
     glfwSetFramebufferSizeCallback(getWindow(), framebufferResizeCallback);
 }
@@ -811,9 +815,9 @@ void GuiEngine::initVulkan()
     createSyncObjects();
 }
 
-void GuiEngine::init()
+void GuiEngine::init(bool maximize)
 {
-    initGLFW();
+    initGLFW(maximize);
     initVulkan();
     imgui_engine->init(shared_from_this());
     for (const auto &texture : textures)

@@ -526,8 +526,10 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 
     /**
      * Initializes GLFW backend.
+     *
+     * @param maximize Whether to maximize window on startup.
      */
-    void initGLFW();
+    void initGLFW(bool maximize);
 
     /**
      * Initializes Vulkan backend.
@@ -618,8 +620,10 @@ public:
     /**
      * Initialize GUI backend.
      * Initializes GLFW, Vulkan and ImGui.
+     *
+     * @param maximize Whether to maximize window on startup.
      */
-    void init();
+    void init(bool maximize);
 
     /**
      * Draws the frame.
