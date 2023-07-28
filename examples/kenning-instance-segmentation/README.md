@@ -13,8 +13,10 @@ The demo consists of three nodes:
 This demo requires:
 
 * A camera for streaming frames
-* A [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) for cloning all of the necessary repositories
+* An NVIDIA GPU for accelerating the inference
+* [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) for cloning all of the necessary repositories
 * [Docker](https://www.docker.com/) to use a prepared environment
+* [nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) for providing access to the GPU in the Docker container
 
 All of the necessary build, runtime and development dependencies are provided in the [Dockerfile](./Dockerfile).
 It contains:
@@ -24,18 +26,19 @@ It contains:
 * [Apache TVM](https://github.com/apache/tvm) for model optimization and runtime
 * Dependencies for the [Kenning framework](https://github.com/antmicro/kenning)
 * CUDNN and CUDA libraries for faster acceleration on GPUs
-* Development tools
+* Additional development tools
 
 It can be either pulled from Docker registry using:
 
-```bash
+```
 docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
 ```
 
+
 or built from scratch with:
 
-```bash
-sudo docker build -t kenning-ros2-environment .
+```
+sudo docker build -t kenning-ros2-demo .
 ```
 
 ## Downloading the demo
@@ -51,26 +54,31 @@ Then, download all of the dependencies using the `repo` tool:
 ```bash
 repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-instance-segmentation/manifest.xml
 
-repo sync -j12
-
-repo forall git lfs pull
+repo sync -j`nproc`
 ```
+
+It downloads the following repositories:
+
+* [Kenning](https://github.com/antmicro/kenning) for model optimization and runtime, under `kenning` directory.
+* [ROS 2 Camera node](https://github.com/antmicro/ros2-camera-node) for obtaining frames from the camera and serving its parameters as ROS 2 parameters, under `src/camera_node` directory.
+* [Kenning's ROS 2 messages and services](https://github.com/antmicro/ros2-kenning-computer-vision-msgs) for computer vision, under `src/computer_vision_msgs` directory.
+* This repository, under `src/gui_node` directory.
 
 ## Starting the Docker environment
 
 In the beginning, if the Docker container is used, let's allow non-network local connections to X11 so that GUI can be started from the Docker container:
 
-```bash
+```
 xhost +local:
 ```
 
 Thirdly, let's run a Docker container with:
 
-```bash
+```
 ./run-docker.sh
 ```
 
-`NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-environment`, run `DOCKER_IMAGE=kenning-ros2-environment ./run-docker.sh`.
+`NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-demo`, run `DOCKER_IMAGE=kenning-ros2-demo ./run-docker.sh`.
 Also, if you want to change the camera path, set `CAMERA_PATH` variable with desired path before running the script.
 
 This script starts the  image with:
@@ -84,7 +92,7 @@ This script starts the  image with:
 Then, in the Docker container, you need to install graphics libraries for NVIDIA that match your host's drivers.
 To check the NVIDIA drivers version, run:
 
-```bash
+```
 nvidia-smi
 ```
 
@@ -92,13 +100,13 @@ And check the `Driver version`.
 
 For example, for 530.41.03, install the following in the container:
 
-```bash
+```
 apt-get update && apt-get install libnvidia-gl-530
 ```
 
 Then, go to the workspace directory in the container:
 
-```bash
+```
 cd /data
 ```
 
@@ -138,7 +146,7 @@ cd /data
 colcon build --base-paths src --cmake-args -DBUILD_KENNING_YOLACT_DEMO=y
 ```
 
-## Running the demo
+## Running the demo with a camera
 
 Then, to run the demo, load the ROS 2 environment including the newly built packages:
 
@@ -146,20 +154,20 @@ Then, to run the demo, load the ROS 2 environment including the newly built pack
 source install/setup.sh
 ```
 
-After this, launch Kenning, Camera node, and GUI node using the launch file `kenning-instance-segmentation.py`:
+After this, launch Kenning, Camera node, and GUI node using the launch file [`kenning-instance-segmentation.py`](./kenning-instance-segmentation.py):
 
-```bash
+```
 ros2 launch gui_node kenning-instance-segmentation.py
 ```
 
 In case you want to change the path to the camera, use `camera_path:=<new-path>` argument, e.g.:
 
-```bash
+```
 ros2 launch gui_node kenning-instance-segmentation.py camera_path:=/dev/video1
 ```
 
-Finally, a GUI should appear, with:
+After this, a GUI should appear, with:
 
 * Direct view from Camera node
-* Instance segmentation view based on predictions from Kenning
+* Instance segmentation view based on predictions from Kenning (started using `kenning flow` with [`kenning-instance-segmentation.json`](./kenning-instance-segmentation.json))
 * A widget visualizing a list of detected objects, with a possibility to filter out not interesting classes.
