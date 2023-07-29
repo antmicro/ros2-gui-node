@@ -37,7 +37,7 @@ docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
 or built from scratch with:
 
 ```
-sudo docker build -t kenning-ros2-demo .
+sudo ./build-docker.sh
 ```
 
 ## Downloading the demo

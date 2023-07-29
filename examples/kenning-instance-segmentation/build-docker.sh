@@ -6,7 +6,7 @@
 
 # This script builds the Docker container for ROS 2 and Kenning integration
 
-DOCKER_TAG=${DOCKER_TAG:-kenning-ros2-image}
+DOCKER_TAG=${DOCKER_TAG:-ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo}
 
 SCRIPTDIR=$(dirname $(realpath $0))
 
