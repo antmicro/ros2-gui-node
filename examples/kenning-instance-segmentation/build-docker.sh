@@ -16,7 +16,7 @@ mkdir -p third-party/
 
 if [ ! -d "third-party/tvm" ]
 then
-    git clone --recursive --shallow-submodules https://github.com/apache/tvm.git --depth 1 --branch v0.12.0 third-party/tvm
+    git clone --recursive https://github.com/apache/tvm.git --depth 1 --branch v0.12.0 third-party/tvm
 fi
 
 docker build . --tag ${DOCKER_TAG}
