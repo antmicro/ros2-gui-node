@@ -13,10 +13,15 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            # - name: Cancel previous
-            #   uses: styfle/cancel-workflow-action@0.11.0
-            #   with:
-            #       access_token: ${{ github.token }}
+            - name: Cancel previous
+              uses: styfle/cancel-workflow-action@0.11.0
+              with:
+                  access_token: ${{ github.token }}
+            - name: Increase build space
+              run: |
+                  sudo rm -rf /usr/share/dotnet/*
+                  sudo rm -rf /usr/local/lib/android/*
+                  sudo rm -rf /opt/ghc/*
             - name: Checkout sources
               uses: actions/checkout@v3
               with:
