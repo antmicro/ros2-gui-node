@@ -54,6 +54,8 @@ Then, download all dependencies using the `repo` tool:
 repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-instance-segmentation/manifest.xml
 
 repo sync -j`nproc`
+
+mkdir build
 ```
 
 It downloads the following repositories:
@@ -71,10 +73,10 @@ If you are using the Docker container, allow non-network local connections to X1
 xhost +local:
 ```
 
-Then, run a Docker container using:
+Then, run a Docker container under the `kenning-ros2-demo` directory with:
 
 ```
-./run-docker.sh
+../run-docker.sh
 ```
 
 `NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-demo`, run `DOCKER_IMAGE=kenning-ros2-demo ./run-docker.sh`.
@@ -141,7 +143,6 @@ source /opt/ros/setup.sh
 Then, build the GUI node and the Camera node with:
 
 ```bash
-cd /data
 colcon build --base-paths src --cmake-args -DBUILD_KENNING_YOLACT_DEMO=y
 ```
 
