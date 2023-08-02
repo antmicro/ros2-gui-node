@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2022-2023 Antmicro <www.antmicro.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "gui_node/widget/widget_control.hpp"
 #include <rcl_interfaces/msg/floating_point_range.hpp>
 #include <rcl_interfaces/msg/integer_range.hpp>
