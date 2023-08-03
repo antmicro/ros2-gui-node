@@ -152,7 +152,7 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> present_modes; ///< Presentation modes swap chain can use
 };
 
-const VkClearValue clear_color = {{{0.45f, 0.55f, 0.60f, 1.0f}}}; ///< Clear color for the framebuffer
+const VkClearValue clear_color = {{{0.094f, 0.094f, 0.094f, 1.0f}}}; ///< Clear color for the framebuffer
 
 /**
  * The class responsible for initializing ImGui to work with Vulkan.
@@ -173,6 +173,11 @@ private:
      * @param gui_engine Pointer to the GUI engine.
      */
     void initFonts(std::shared_ptr<GuiEngine> gui_engine);
+
+    /**
+     * Initializes ImGui theme.
+     */
+    void setColor();
 
 public:
     /**
