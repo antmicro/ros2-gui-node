@@ -115,7 +115,7 @@ public:
         std::shared_ptr<RosCounterServerData> ros_server_data_ptr = std::make_shared<RosCounterServerData>(
             gui_node_ptr,
             "/counter",
-            [](std_srvs::srv::Trigger::Request::SharedPtr request,
+            []([[maybe_unused]] const std_srvs::srv::Trigger::Request::SharedPtr request,
                std_srvs::srv::Trigger::Response::SharedPtr response) -> std_srvs::srv::Trigger::Response::SharedPtr
             {
                 response->success = true;
