@@ -25,11 +25,13 @@ find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenCV REQUIRED)
 
-include_directories(include
-    third-party/imgui
-    third-party/imgui/backends
-    third-party/imgui/misc/cpp
-    Vulkan::Headers
+set(WIDGET_SOURCES
+    src/widget/widget_control.cpp
+    src/widget/widget_counter.cpp
+    src/widget/widget_detection.cpp
+    src/widget/widget_rosout.cpp
+    src/widget/widget_string.cpp
+    src/widget/widget_video.cpp
 )
 
 set(IMGUI_SOURCES
@@ -47,37 +49,96 @@ add_compile_definitions(GLFW_INCLUDE_VULKAN)
 #######################
 # GuiNode library
 #######################
-add_library(gui_node SHARED
+add_library(${PROJECT_NAME} SHARED
     src/gui_node.cpp
     src/gui_engine.cpp
     ${IMGUI_SOURCES}
 )
 
-target_link_libraries(gui_node
+target_link_libraries(${PROJECT_NAME}
     glfw
     Vulkan::Vulkan
 )
 
-ament_target_dependencies(gui_node rclcpp)
+ament_target_dependencies(${PROJECT_NAME}
+    rclcpp
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+    ${Vulkan_INCLUDE_DIRS}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party/imgui>
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party/imgui/backends>
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third-party/imgui/misc/cpp>
+    $<INSTALL_INTERFACE:include>
+)
+
+install(TARGETS
+    ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}-targets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+export(TARGETS
+    ${PROJECT_NAME}
+    FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake
+)
+
+#######################
+# Core widget library
+#######################
+add_library(${PROJECT_NAME}_core_widgets SHARED
+    ${WIDGET_SOURCES}
+)
+
+target_include_directories(${PROJECT_NAME}_core_widgets PUBLIC
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+target_link_libraries(${PROJECT_NAME}_core_widgets
+    ${PROJECT_NAME}
+    ${OpenCV_LIBS}
+)
+
+ament_target_dependencies(${PROJECT_NAME}_core_widgets
+    rcl_interfaces
+    rclcpp
+    sensor_msgs
+    std_msgs
+    std_srvs
+)
+
+install(TARGETS
+    ${PROJECT_NAME}_core_widgets
+    EXPORT ${PROJECT_NAME}_core_widgets-targets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+export(TARGETS
+    ${PROJECT_NAME}_core_widgets
+    FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_core_widgetsTargets.cmake
+)
 
 #######################
 # SampleGuiComponent
 #######################
 add_library(sample_gui_node SHARED
     src/samples/sample_gui_node.cpp
-    src/widget/widget_counter.cpp
-    src/widget/widget_rosout.cpp
-    src/widget/widget_string.cpp
-    src/widget/widget_video.cpp
 )
 
 target_link_libraries(sample_gui_node
-    gui_node
-    ${OpenCV_LIBS}
+    ${PROJECT_NAME}
+    ${PROJECT_NAME}_core_widgets
 )
 
 ament_target_dependencies(sample_gui_node
-    rcl_interfaces
     rclcpp
     rclcpp_components
     sensor_msgs
@@ -96,24 +157,23 @@ if (BUILD_KENNING_YOLACT_DEMO)
     #######################
     add_library(kenning_yolact_gui_node SHARED
         examples/kenning-instance-segmentation/kenning_yolact_gui_node.cpp
-        src/widget/widget_video.cpp
-        src/widget/widget_detection.cpp
-        src/widget/widget_rosout.cpp
-        src/widget/widget_control.cpp
-        ${IMGUI_SOURCES}
     )
 
     target_link_libraries(kenning_yolact_gui_node
-        gui_node
+        ${PROJECT_NAME}
+        ${PROJECT_NAME}_core_widgets
         ${OpenCV_LIBS}
     )
 
+    target_include_directories(kenning_yolact_gui_node PUBLIC
+        ${OpenCV_INCLUDE_DIRS}
+    )
+
     ament_target_dependencies(kenning_yolact_gui_node
-        rcl_interfaces
+        kenning_computer_vision_msgs
         rclcpp
         rclcpp_components
         sensor_msgs
-        kenning_computer_vision_msgs
     )
 
     rclcpp_components_register_nodes(kenning_yolact_gui_node "gui_node::KenningYolactGuiComponent")
@@ -137,8 +197,12 @@ add_library(sample_publish_node SHARED
 )
 
 target_link_libraries(sample_publish_node
-    gui_node
+    ${PROJECT_NAME}
     ${OpenCV_LIBS}
+)
+
+target_include_directories(sample_publish_node PUBLIC
+    ${OpenCV_INCLUDE_DIRS}
 )
 
 ament_target_dependencies(sample_publish_node
@@ -155,7 +219,6 @@ rclcpp_components_register_nodes(sample_publish_node "gui_node::SamplePublisherC
 # Install
 #######################
 install(TARGETS
-    gui_node
     sample_gui_node
     sample_publish_node
     ARCHIVE DESTINATION lib
@@ -163,7 +226,7 @@ install(TARGETS
     RUNTIME DESTINATION bin
 )
 
-install (FILES launch/sample_launch.py
+install(FILES launch/sample_launch.py
     DESTINATION share/${PROJECT_NAME}
 )
 
