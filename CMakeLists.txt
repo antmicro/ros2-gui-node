@@ -57,7 +57,7 @@ add_library(${PROJECT_NAME} SHARED
 
 target_link_libraries(${PROJECT_NAME}
     glfw
-    Vulkan::Vulkan
+    ${Vulkan_LIBRARIES}
 )
 
 ament_target_dependencies(${PROJECT_NAME}
@@ -76,9 +76,20 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+install(DIRECTORY
+    include/
+    third-party/imgui/
+    third-party/imgui/backends/
+    third-party/imgui/misc/cpp/
+    DESTINATION include
+)
+
+ament_export_targets(${PROJECT_NAME}Targets HAS_LIBRARY_TARGET)
+ament_export_dependencies(rclcpp)
+
 install(TARGETS
     ${PROJECT_NAME}
-    EXPORT ${PROJECT_NAME}-targets
+    EXPORT ${PROJECT_NAME}Targets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -113,9 +124,17 @@ ament_target_dependencies(${PROJECT_NAME}_core_widgets
     std_srvs
 )
 
+ament_export_targets(${PROJECT_NAME}_core_widgetsTargets HAS_LIBRARY_TARGET)
+ament_export_dependencies(rcl_interfaces
+    rclcpp
+    sensor_msgs
+    std_msgs
+    std_srvs
+)
+
 install(TARGETS
     ${PROJECT_NAME}_core_widgets
-    EXPORT ${PROJECT_NAME}_core_widgets-targets
+    EXPORT ${PROJECT_NAME}_core_widgetsTargets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
