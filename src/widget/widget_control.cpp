@@ -473,14 +473,14 @@ void ControlWidget::drawNumericValue(
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + draw_width / 2);
     if (!from_val.empty())
     {
-        ImGui::Text(from_val.c_str());
+        ImGui::Text("%s", from_val.c_str());
         ImGui::SameLine();
     }
     draw_function();
     if (!to_val.empty())
     {
         ImGui::SameLine();
-        ImGui::Text(to_val.c_str());
+        ImGui::Text("%s", to_val.c_str());
     }
 }
 

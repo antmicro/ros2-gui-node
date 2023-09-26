@@ -39,12 +39,13 @@ bool GuiEngine::checkValidationLayerSupport()
     std::vector<VkLayerProperties> available_layers(layer_count);
     vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
 
-    for (const std::string &layer_name : validation_layers)
+    for (const char *layer_name : validation_layers)
     {
         bool layer_found = false;
+        const std::string layer_name_str(layer_name);
         for (const VkLayerProperties &layer_properties : available_layers)
         {
-            if (layer_name == layer_properties.layerName)
+            if (layer_name_str == layer_properties.layerName)
             {
                 layer_found = true;
                 break;
