@@ -499,7 +499,7 @@ VkSurfaceFormatKHR GuiEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfac
         available_formats.begin(),
         available_formats.end(),
         [](const VkSurfaceFormatKHR &format)
-        { return format.format == VK_FORMAT_B8G8R8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; });
+        { return format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; });
 
     if (it != available_formats.end())
     {
