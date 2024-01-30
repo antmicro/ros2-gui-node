@@ -119,7 +119,7 @@ In this example, we will use the Apache TVM compiler to compile the model for th
 First, install Kenning with its necessary dependencies:
 
 ```bash
-pip install --no-deps kenning/
+pip install kenning/
 ```
 
 Then, run the [scenario with YOLACT optimizations for the GPU](https://github.com/antmicro/kenning/blob/main/scripts/jsonconfigs/yolact-tvm-gpu-detection.json).
@@ -129,7 +129,7 @@ It will:
 * Compile the model using TVM for a CUDA-enabled GPU with support for CUDNN and CUBLAS libraries.
 
 ```bash
-kenning optimize  --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
+kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
 ```
 
 ## Building GUI node and Camera node
