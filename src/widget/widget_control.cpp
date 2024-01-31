@@ -66,11 +66,13 @@ void ControlWidget::updateParameters()
             {
                 if (!result.successful)
                 {
-                    RCLCPP_ERROR(gui_node->get_logger(), "Failed to update parameter %s", result.reason.c_str());
+                    parameters_mutex.unlock();
+                    RCLCPP_ERROR(gui_node->get_logger(), "%s", result.reason.c_str());
+                    getParameters();
                     return;
                 }
             }
-            RCLCPP_INFO(gui_node->get_logger(), "Updated %ld parameters", response->results.size());
+            RCLCPP_DEBUG(gui_node->get_logger(), "Updated %ld parameters", response->results.size());
         });
     parameters_mutex.unlock();
 }
