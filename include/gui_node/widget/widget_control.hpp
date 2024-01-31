@@ -168,6 +168,7 @@ private:
     std::string curr_param_desc;           ///< Description of the currently selected parameter
     std::string filter_name;               ///< Name of the filter for parameters
     std::vector<NodeParameter> parameters; ///< Map of parameters of the ROS2 node
+    rclcpp::TimerBase::SharedPtr timer;    ///< Timer to wait for service
 
 public:
     /**

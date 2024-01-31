@@ -572,15 +572,33 @@ std::string ControlWidget::trimZeros(const std::string &str)
 
 void ControlWidget::getParameters()
 {
-    ListParameters::Request::SharedPtr request = std::make_shared<ListParameters::Request>();
     if (!list_parameters_client_->wait_for_service(std::chrono::milliseconds(100)))
     {
-        RCLCPP_ERROR(
+        RCLCPP_WARN(
             gui_node->get_logger(),
-            "Service %s is not available",
+            "Service %s is not available.",
             list_parameters_client_->get_service_name());
+
+        // Try again in a second
+        if (timer)
+        {
+            timer->reset();
+        }
+        else
+        {
+            timer = gui_node->create_wall_timer(
+                std::chrono::milliseconds(1000),
+                std::bind(&ControlWidget::getParameters, this));
+        }
         return;
     }
+    if (timer)
+    {
+        timer->cancel();
+        timer.reset();
+    }
+
+    ListParameters::Request::SharedPtr request = std::make_shared<ListParameters::Request>();
     list_parameters_client_->async_send_request(
         request,
         [this](rclcpp::Client<ListParameters>::SharedFuture future)
