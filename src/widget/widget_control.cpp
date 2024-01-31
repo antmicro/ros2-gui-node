@@ -35,17 +35,22 @@ void ControlWidget::updateParameters()
     parameters_mutex.lock();
     for (NodeParameter &parameter : parameters)
     {
-        if (parameter.descriptor && parameter.value && !parameter.descriptor->read_only)
+        if (!parameter.descriptor)
+        {
+            continue;
+        }
+        else if (!parameter.descriptor->read_only && *parameter.value.get() != *parameter.curr_value.get())
         {
             Parameter parameter_to_update;
             parameter_to_update.name = parameter.name;
             parameter_to_update.value = *parameter.value.get();
             parameters_to_update.push_back(parameter_to_update);
+            parameter.curr_value.reset(new ParameterValue(*parameter.value.get()));
         }
     }
     if (parameters_to_update.empty() || parameters.empty())
     {
-        RCLCPP_WARN(gui_node->get_logger(), "No parameters to update");
+        RCLCPP_DEBUG(gui_node->get_logger(), "No parameters to update");
         parameters_mutex.unlock();
         return;
     }
@@ -622,6 +627,7 @@ void ControlWidget::getParametersValue()
                 for (size_t i = 0; i < parameters.size(); i++)
                 {
                     parameters.at(i).value = std::make_shared<ParameterValue>(response->values.at(i));
+                    parameters.at(i).curr_value = std::make_shared<ParameterValue>(response->values.at(i));
                     parameters.at(i).type = parameter_types[parameters.at(i).value->type];
                 }
                 this->parameters_mutex.unlock();

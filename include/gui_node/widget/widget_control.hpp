@@ -34,6 +34,7 @@ struct NodeParameter
 {
     std::string name;                          ///< Name of the parameter
     std::string type;                          ///< Type of the parameter
+    ParameterValue::SharedPtr curr_value;      ///< Currently set value of the parameter
     ParameterValue::SharedPtr value;           ///< Value of the parameter
     ParameterDescriptor::SharedPtr descriptor; ///< Descriptor of the parameter
 
