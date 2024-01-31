@@ -145,9 +145,9 @@ public:
     /**
      * Renders the frame using defined widgets.
      *
-     * @throws std::runtime_error if the GuiEngine is not initialized.
+     * @return True if the frame was rendered, false otherwise.
      */
-    void render();
+    bool render();
 
     /**
      * Get the GuiEngine.

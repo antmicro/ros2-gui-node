@@ -54,17 +54,33 @@ void GuiNode::prepare(const std::string &application_name, bool maximize_window)
 {
     gui_engine = std::make_shared<GuiEngine>(application_name, shared_from_this());
     gui_engine->init(maximize_window);
-    timer = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&GuiNode::render, this));
+    timer = this->create_wall_timer(
+        std::chrono::milliseconds(10),
+        [this]() -> void
+        {
+            if (rclcpp::ok())
+            {
+                if (!this->render())
+                {
+                    timer->cancel();
+                    rclcpp::shutdown();
+                }
+            }
+            else
+            {
+                timer->cancel();
+            }
+        });
 }
 
-void GuiNode::render()
+bool GuiNode::render()
 {
     if (!gui_engine)
     {
         RCLCPP_FATAL(get_logger(), "GuiEngine not initialized");
-        throw std::runtime_error("GuiEngine not initialized");
+        return false;
     }
-    if (!glfwWindowShouldClose(gui_engine->getWindow()))
+    else if (!glfwWindowShouldClose(gui_engine->getWindow()))
     {
         glfwPollEvents();
         ImGui_ImplVulkan_NewFrame();
@@ -81,11 +97,9 @@ void GuiNode::render()
         }
         ImGui::Render();
         gui_engine->draw();
+        return true;
     }
-    else
-    {
-        rclcpp::shutdown();
-    }
+    return false;
 }
 
 std::shared_ptr<GuiEngine> GuiNode::getGuiEngine()
