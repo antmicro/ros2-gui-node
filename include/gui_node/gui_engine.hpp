@@ -63,15 +63,15 @@ VK_DECLARE_TYPE_WITH_PARENT(SwapchainKHR, Device)   ///< Define a unique pointer
 
 /**
  * Verifies if the given Vulkan result is a success.
- * If not, it throws the RCLCPP_FATAL and a runtime error with given message.
+ * If not, reports an error and returns false.
  *
  * @param result The result to verify.
  * @param logger The logger to use.
  * @param message The message to display if the result is not a success.
  *
- * @throw std::runtime_error If the result is not a success.
+ * @return True if the result is a success, false otherwise.
  */
-void checkVulkanResult(VkResult result, const rclcpp::Logger &logger, const std::string &message);
+bool checkVulkanResult(VkResult result, const rclcpp::Logger &logger, const std::string &message);
 
 class GuiEngine; ///< Forward declaration
 
@@ -164,8 +164,10 @@ private:
      * Initializes Vulkan backend for ImGui.
      *
      * @param gui_engine Reference to the GuiEngine object.
+     *
+     * @return True if the initialization was successful, false otherwise.
      */
-    void initVulkanImpl(std::shared_ptr<GuiEngine> gui_engine);
+    bool initVulkanImpl(std::shared_ptr<GuiEngine> gui_engine);
 
     /**
      * Initializes ImGui font.
@@ -189,8 +191,10 @@ public:
      * Initializes ImGui.
      *
      * @param gui_engine Reference to the GuiEngine object.
+     *
+     * @return True if the initialization was successful, false otherwise.
      */
-    void init(std::shared_ptr<GuiEngine> gui_engine);
+    bool init(std::shared_ptr<GuiEngine> gui_engine);
 
     /**
      * Destroys ImGui context and frees all resources.
@@ -218,37 +222,37 @@ private:
     /**
      * Creates an image.
      *
-     * @throw std::runtime_error If the image cannot be created.
+     * @return True if the image was created successfully, false otherwise.
      */
-    void createImage();
+    bool createImage();
 
     /**
      * Creates image view for the image.
      *
-     * @throw std::runtime_error If the image view cannot be created.
+     * @return True if the image view was created successfully, false otherwise.
      */
-    void createImageView();
+    bool createImageView();
 
     /**
      * Creates a sampler for the image.
      *
-     * @throw std::runtime_error If the sampler cannot be created.
+     * @return True if the sampler was created successfully, false otherwise.
      */
-    void createSampler();
+    bool createSampler();
 
     /**
      * Creates a buffer for uploading data to the GPU.
      *
-     * @throw std::runtime_error If the buffer cannot be created.
+     * @return True if the buffer was created successfully, false otherwise.
      */
-    void createUploadBuffer();
+    bool createUploadBuffer();
 
     /**
      * Uploads the image data to the GPU.
      *
-     * @throw std::runtime_error If the data cannot be uploaded.
+     * return True if the image data was uploaded successfully, false otherwise.
      */
-    void uploadToBuffer();
+    bool uploadToBuffer();
 
     /**
      * Records a command buffer for copying the image data to the GPU.
@@ -256,9 +260,9 @@ private:
      * @param command_pool Shared pointer to the command pool to use.
      * @param graphics_queue Graphics queue to use.
      *
-     * @throw std::runtime_error If the command buffer cannot be recorded.
+     * @bool True if the command buffer was recorded successfully, false otherwise.
      */
-    void recordCommandBuffer(VkCommandPoolSharedPtr command_pool, const VkQueue &graphics_queue);
+    bool recordCommandBuffer(VkCommandPoolSharedPtr command_pool, const VkQueue &graphics_queue);
 
     int channels;                                 ///< Number of channels in the texture
     int height;                                   ///< Height of the texture
@@ -330,8 +334,10 @@ public:
      * Updates the texture with provided image data.
      *
      * @param image_data Vector of the image data.
+     *
+     * @return bool True if the texture was updated successfully.
      */
-    void updateTexture(std::vector<unsigned char> image_data);
+    bool updateTexture(std::vector<unsigned char> image_data);
 };
 
 /**
@@ -370,8 +376,10 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 
     /**
      * Sets up the debug messenger.
+     *
+     * @return True if the debug messenger was set up successfully, false otherwise.
      */
-    void setupDebugMessenger();
+    bool setupDebugMessenger();
 
     /**
      * Query the swap chain support details for the given physical device.
@@ -425,8 +433,10 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
 
     /**
      * Recreates the swap chain, used when the window is resized.
+     *
+     * @return True if the swap chain was recreated successfully, false otherwise.
      */
-    void rebuildSwapChain();
+    bool rebuildSwapChain();
 
     /**
      * Writes commands for drawing to the command buffer.
@@ -434,93 +444,93 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
      * @param command_buffer The command buffer to write the commands to.
      * @param image_index The index of the image to draw to.
      *
-     * @throws std::runtime_error If the command buffer fails to begin recording.
+     * @return True if the commands were written successfully, false otherwise.
      */
-    void recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t image_index);
+    bool recordRenderPass(const VkCommandBuffer &command_buffer, uint32_t image_index);
 
     /**
      * Creates a Vulkan instance with GLFW extensions.
      *
-     * @throws std::runtime_error if the instance could not be created.
+     * @return True if the instance was created successfully, false otherwise.
      */
-    void createInstance();
+    bool createInstance();
 
     /**
      * Creates a Vulkan surface for the window.
      *
-     * @throws std::runtime_error if the surface could not be created.
+     * @return True if the surface was created successfully, false otherwise.
      */
-    void createSurface();
+    bool createSurface();
 
     /**
      * Creates a logical device and queues.
      *
-     * @throws std::runtime_error if failed to create logical device.
+     * @return True if the logical device and queues were created successfully, false otherwise.
      */
-    void createLogicalDevice();
+    bool createLogicalDevice();
 
     /**
      * Chooses the best physical device for the previously initialized Vulkan instance.
      *
-     * @throws std::runtime_error if no devices are available or no suitable device was found.
+     * @return True if a physical device was chosen successfully, false otherwise.
      */
-    void createPhysicalDevice();
+    bool createPhysicalDevice();
 
     /**
      * Creates the swap chain.
      *
-     * @throws std::runtime_error if the swap chain could not be created.
+     * @return True if the swap chain was created successfully, false otherwise.
      */
-    void createSwapChain();
+    bool createSwapChain();
 
     /**
      * Creates the swap chain image views.
      *
-     * @throws std::runtime_error if the image views could not be created.
+     * @return True if the swap chain image views were created successfully, false otherwise.
      */
-    void createImageViews();
+    bool createImageViews();
 
     /**
      * Creates the render pass.
      *
-     * @throws std::runtime_error if the render pass could not be created.
+     * @return True if the render pass was created successfully, false otherwise.
      */
-    void createRenderPass();
+    bool createRenderPass();
 
     /**
      * Creates the frame buffers.
      *
-     * @throws std::runtime_error if the frame buffers could not be created.
+     * @return True if the frame buffers were created successfully, false otherwise.
      */
-    void createFramebuffers();
+    bool createFramebuffers();
 
     /**
      * Creates the command pool.
      *
-     * @throws std::runtime_error if the command pool could not be created.
+     * @return True if the command pool was created successfully, false otherwise.
      */
-    void createCommandPool();
+    bool createCommandPool();
 
     /**
      * Creates a descriptor pool for the GUI.
      *
-     * @throws std::runtime_error if the descriptor pool could not be created.
+     * @return True if the descriptor pool was created successfully, false otherwise.
      */
-    void createDescriptorPool();
+    bool createDescriptorPool();
 
     /**
      * Creates the command buffers.
      *
-     * @throws std::runtime_error if the command buffers could not be created.
+     * @return True if the command buffers were created successfully, false otherwise.
      */
-    void createCommandBuffers();
+    bool createCommandBuffers();
 
     /**
      * Creates the semaphores.
      *
-     * @throws std::runtime_error if the semaphores could not be created.
+     * @return True if the semaphores were created successfully, false otherwise.
      */
-    void createSyncObjects();
+    bool createSyncObjects();
 
     /**
      * Callback for when the window is resized.
@@ -641,9 +651,9 @@ public:
     /**
      * Draws the frame.
      *
-     * @throws std::runtime_error if the frame could not be drawn.
+     * @return bool True if the frame was successfully drawn, false otherwise.
      */
-    void draw();
+    bool draw();
 
     /**
      * Adds a new texture object to the GUI.

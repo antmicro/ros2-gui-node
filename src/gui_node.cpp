@@ -78,6 +78,7 @@ bool GuiNode::prepare(const std::string &application_name, bool maximize_window)
     {
         const std::string error_msg = "Failed to initialize GuiEngine";
         RCLCPP_FATAL(get_logger(), error_msg.c_str());
+        timer->cancel();
         rclcpp::shutdown(nullptr, error_msg);
     }
     return status;
@@ -106,8 +107,7 @@ bool GuiNode::render()
             pos.y += title_bar_size;
         }
         ImGui::Render();
-        gui_engine->draw();
-        return true;
+        return gui_engine->draw();
     }
     return false;
 }
