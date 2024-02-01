@@ -27,7 +27,7 @@ void checkVulkanResult(VkResult result, const rclcpp::Logger &logger, const std:
 {
     if (result != VK_SUCCESS)
     {
-        RCLCPP_FATAL(logger, "%s", message.c_str());
+        RCLCPP_ERROR(logger, "%s", message.c_str());
         throw std::runtime_error(message);
     }
 }
@@ -111,7 +111,7 @@ void GuiEngine::createInstance()
 {
     if (enable_validation_layers && !checkValidationLayerSupport())
     {
-        RCLCPP_FATAL(node->get_logger(), "Validation layers requested, but not available!");
+        RCLCPP_ERROR(node->get_logger(), "Validation layers requested, but not available!");
         throw std::runtime_error("Validation layers requested, but not available!");
     }
     uint32_t glfw_extension_count = 0;
@@ -170,7 +170,7 @@ void GuiEngine::setupDebugMessenger()
     }
     else
     {
-        RCLCPP_FATAL(node->get_logger(), "Failed to set up debug messenger, extension is not present");
+        RCLCPP_ERROR(node->get_logger(), "Failed to set up debug messenger, extension is not present");
         throw std::runtime_error("Failed to set up debug messenger, extension is not present");
     }
 }
@@ -188,7 +188,7 @@ void GuiEngine::createPhysicalDevice()
     vkEnumeratePhysicalDevices(*getInstance().get(), &device_count, nullptr);
     if (device_count == 0)
     {
-        RCLCPP_FATAL(node->get_logger(), "Failed to find GPUs with Vulkan support");
+        RCLCPP_ERROR(node->get_logger(), "Failed to find GPUs with Vulkan support");
         throw std::runtime_error("Failed to find GPUs with Vulkan support");
     }
 
@@ -202,7 +202,7 @@ void GuiEngine::createPhysicalDevice()
 
     if (it == devices.end())
     {
-        RCLCPP_FATAL(node->get_logger(), "Failed to find a suitable GPU");
+        RCLCPP_ERROR(node->get_logger(), "Failed to find a suitable GPU");
         throw std::runtime_error("Failed to find a suitable GPU");
     }
 
@@ -491,7 +491,7 @@ VkSurfaceFormatKHR GuiEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfac
 {
     if (available_formats.empty())
     {
-        RCLCPP_FATAL(node->get_logger(), "No available surface formats");
+        RCLCPP_ERROR(node->get_logger(), "No available surface formats");
         throw std::runtime_error("No available surface formats");
     }
 
@@ -717,7 +717,7 @@ void GuiEngine::draw()
     }
     else if ((result != VK_SUCCESS) && (result != VK_SUBOPTIMAL_KHR))
     {
-        RCLCPP_FATAL(node->get_logger(), "Failed to acquire swap chain image!");
+        RCLCPP_ERROR(node->get_logger(), "Failed to acquire swap chain image!");
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
@@ -786,9 +786,13 @@ void GLFWwindowDeleter::operator()(GLFWwindow *window) const
     glfwTerminate();
 }
 
-void GuiEngine::initGLFW(bool maximize)
+bool GuiEngine::initGLFW(bool maximize)
 {
-    glfwInit();
+    if (!glfwInit())
+    {
+        RCLCPP_ERROR(node->get_logger(), "Failed to initialize GLFW");
+        return false;
+    }
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = GLFWwindowUniquePtr(glfwCreateWindow(800, 600, application_name.c_str(), nullptr, nullptr));
     if (maximize)
@@ -797,36 +801,54 @@ void GuiEngine::initGLFW(bool maximize)
     }
     glfwSetWindowUserPointer(getWindow(), this);
     glfwSetFramebufferSizeCallback(getWindow(), framebufferResizeCallback);
+    return true;
 }
 
-void GuiEngine::initVulkan()
+bool GuiEngine::initVulkan()
 {
-    createInstance();
-    setupDebugMessenger();
-    createSurface();
-    createPhysicalDevice();
-    createLogicalDevice();
-    createSwapChain();
-    createImageViews();
-    createRenderPass();
-    createFramebuffers();
-    createCommandPool();
-    createDescriptorPool();
-    createCommandBuffers();
-    createSyncObjects();
+    try
+    {
+        createInstance();
+        setupDebugMessenger();
+        createSurface();
+        createPhysicalDevice();
+        createLogicalDevice();
+        createSwapChain();
+        createImageViews();
+        createRenderPass();
+        createFramebuffers();
+        createCommandPool();
+        createDescriptorPool();
+        createCommandBuffers();
+        createSyncObjects();
+    }
+    catch (const std::runtime_error &e)
+    {
+        return false;
+    }
+    return true;
 }
 
-void GuiEngine::init(bool maximize)
+bool GuiEngine::init(bool maximize)
 {
-    initGLFW(maximize);
-    initVulkan();
+    if (!initGLFW(maximize))
+    {
+        return false;
+    }
+    if (!initVulkan())
+    {
+        return false;
+    }
     imgui_engine->init(shared_from_this());
     for (const auto &texture : textures)
     {
-        texture.second->init();
+        if (!texture.second->init())
+        {
+            return false;
+        }
     }
     initialized = true;
-    return;
+    return true;
 }
 
 void GuiEngine::cleanupSwapChain()
@@ -909,7 +931,7 @@ VkCommandBuffer GuiEngine::getCommandBuffer(int index) const
 {
     if ((static_cast<size_t>(index) < 0) || (static_cast<size_t>(index) >= command_buffers.size()))
     {
-        RCLCPP_FATAL(node->get_logger(), "Invalid command buffer index: %d", index);
+        RCLCPP_ERROR(node->get_logger(), "Invalid command buffer index: %d", index);
         throw std::runtime_error("Invalid command buffer index");
     }
     return command_buffers[index];
@@ -919,7 +941,7 @@ std::vector<VkImage> GuiEngine::getSwapChainImages() const
 {
     if (swap_chain_images.empty())
     {
-        RCLCPP_FATAL(node->get_logger(), "Swap chain images are empty");
+        RCLCPP_ERROR(node->get_logger(), "Swap chain images are empty");
         throw std::runtime_error("Swap chain images are empty");
     }
     return swap_chain_images;
@@ -929,7 +951,7 @@ VkQueue GuiEngine::getGraphicsQueue() const
 {
     if (!graphics_queue)
     {
-        RCLCPP_FATAL(node->get_logger(), "Graphics queue is not initialized");
+        RCLCPP_ERROR(node->get_logger(), "Graphics queue is not initialized");
         throw std::runtime_error("Graphics queue is not initialized");
     }
     return graphics_queue;
@@ -939,7 +961,7 @@ std::shared_ptr<VkPhysicalDevice> GuiEngine::getPhysicalDevice() const
 {
     if (!physical_device)
     {
-        RCLCPP_FATAL(node->get_logger(), "Physical device is not initialized");
+        RCLCPP_ERROR(node->get_logger(), "Physical device is not initialized");
         throw std::runtime_error("Physical device is not initialized");
     }
     return physical_device;
@@ -1073,16 +1095,24 @@ TextureLoader::TextureLoader(
 {
 }
 
-void TextureLoader::init()
+bool TextureLoader::init()
 {
-    createImage();
-    createImageView();
-    createSampler();
-    descriptor_set =
-        ImGui_ImplVulkan_AddTexture(*sampler.get(), *image_view.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    createUploadBuffer();
-    uploadToBuffer();
-    recordCommandBuffer(gui_engine->getCommandPool(), gui_engine->getGraphicsQueue());
+    try
+    {
+        createImage();
+        createImageView();
+        createSampler();
+        descriptor_set =
+            ImGui_ImplVulkan_AddTexture(*sampler.get(), *image_view.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        createUploadBuffer();
+        uploadToBuffer();
+        recordCommandBuffer(gui_engine->getCommandPool(), gui_engine->getGraphicsQueue());
+    }
+    catch (const std::runtime_error &e)
+    {
+        return false;
+    }
+    return true;
 }
 
 uint32_t TextureLoader::findMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties)
@@ -1098,7 +1128,7 @@ uint32_t TextureLoader::findMemoryType(uint32_t type_filter, VkMemoryPropertyFla
         }
     }
 
-    RCLCPP_FATAL(node->get_logger(), "Failed to find suitable memory type!");
+    RCLCPP_ERROR(node->get_logger(), "Failed to find suitable memory type!");
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 

@@ -300,8 +300,10 @@ public:
 
     /**
      * Loads the texture and creates upload_buffer for it.
+     *
+     * @return bool True if the texture was loaded successfully.
      */
-    void init();
+    bool init();
 
     /**
      * Returns the descriptor set.
@@ -533,13 +535,17 @@ class GuiEngine : public std::enable_shared_from_this<GuiEngine>
      * Initializes GLFW backend.
      *
      * @param maximize Whether to maximize window on startup.
+     *
+     * @return True if initialization was successful, false otherwise.
      */
-    void initGLFW(bool maximize);
+    bool initGLFW(bool maximize);
 
     /**
      * Initializes Vulkan backend.
+     *
+     * @return True if initialization was successful, false otherwise.
      */
-    void initVulkan();
+    bool initVulkan();
 
     /**
      * Cleans up allocated resources and destroys Vulkan, GLFW and ImGui backends.
@@ -627,8 +633,10 @@ public:
      * Initializes GLFW, Vulkan and ImGui.
      *
      * @param maximize Whether to maximize window on startup.
+     *
+     * @return bool True if the GUI was successfully initialized, false otherwise.
      */
-    void init(bool maximize);
+    bool init(bool maximize);
 
     /**
      * Draws the frame.
@@ -725,7 +733,7 @@ public:
      *
      * @return VkQueue The graphics queue.
      *
-     * @ throws std::runtime_error if the graphics queue is not initialized.
+     * @throws std::runtime_error if the graphics queue is not initialized.
      */
     VkQueue getGraphicsQueue() const;
 

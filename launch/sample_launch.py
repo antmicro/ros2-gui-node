@@ -20,6 +20,7 @@ def generate_launch_description():
                 name='sample_gui_node')
         ],
         output='both',
+        on_exit=launch.actions.Shutdown(),
     )
 
     sample_publish_node = ComposableNodeContainer(

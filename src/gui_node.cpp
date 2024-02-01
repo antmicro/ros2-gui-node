@@ -50,27 +50,37 @@ void GuiNode::addWidget(const std::string &widget_name, std::shared_ptr<Widget> 
     widget_map.emplace(widget_name, widget);
 }
 
-void GuiNode::prepare(const std::string &application_name, bool maximize_window)
+bool GuiNode::prepare(const std::string &application_name, bool maximize_window)
 {
     gui_engine = std::make_shared<GuiEngine>(application_name, shared_from_this());
-    gui_engine->init(maximize_window);
-    timer = this->create_wall_timer(
-        std::chrono::milliseconds(10),
-        [this]() -> void
-        {
-            if (rclcpp::ok())
+    bool status = gui_engine->init(maximize_window);
+    if (status)
+    {
+        timer = this->create_wall_timer(
+            std::chrono::milliseconds(10),
+            [this]() -> void
             {
-                if (!this->render())
+                if (rclcpp::ok())
+                {
+                    if (!this->render())
+                    {
+                        timer->cancel();
+                        rclcpp::shutdown();
+                    }
+                }
+                else
                 {
                     timer->cancel();
-                    rclcpp::shutdown();
                 }
-            }
-            else
-            {
-                timer->cancel();
-            }
-        });
+            });
+    }
+    else
+    {
+        const std::string error_msg = "Failed to initialize GuiEngine";
+        RCLCPP_FATAL(get_logger(), error_msg.c_str());
+        rclcpp::shutdown(nullptr, error_msg);
+    }
+    return status;
 }
 
 bool GuiNode::render()
