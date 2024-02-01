@@ -55,3 +55,6 @@ imgui.ini
 
 # Python cache
 __pycache__/
+
+# CTags
+tags
