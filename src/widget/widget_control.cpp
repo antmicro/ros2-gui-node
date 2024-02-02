@@ -476,17 +476,17 @@ void ControlWidget::drawNumericValue(
     std::function<void()> draw_function)
 {
     float draw_width = ImGui::GetContentRegionAvail().x - ImGui::CalcItemWidth();
-    if (!from_val.empty() && !to_val.empty())
-    {
-        draw_width -= ImGui::CalcTextSize(from_val.c_str()).x;
-        draw_width -= ImGui::CalcTextSize(to_val.c_str()).x;
-        draw_width -= ImGui::GetStyle().ItemSpacing.x * 2;
-    }
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + draw_width / 2);
     if (!from_val.empty())
     {
+        ImGui::SetCursorPosX(
+            ImGui::GetCursorPosX() + draw_width / 2 - ImGui::CalcTextSize(from_val.c_str()).x -
+            ImGui::GetStyle().ItemSpacing.x);
         ImGui::Text("%s", from_val.c_str());
         ImGui::SameLine();
+    }
+    else
+    {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + draw_width / 2);
     }
     draw_function();
     if (!to_val.empty())
