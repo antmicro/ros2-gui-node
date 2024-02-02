@@ -94,7 +94,7 @@ bool BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, in
     std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
     if (buffer != last_image_data)
     {
-        if (!texture_loader->updateTexture(buffer))
+        if (!texture_loader->updateTexture(buffer, width, height, channels))
         {
             return false;
         }

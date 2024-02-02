@@ -334,10 +334,13 @@ public:
      * Updates the texture with provided image data.
      *
      * @param image_data Vector of the image data.
+     * @param width Width of the image.
+     * @param height Height of the image.
+     * @param channels Number of channels in the image.
      *
      * @return bool True if the texture was updated successfully.
      */
-    bool updateTexture(std::vector<unsigned char> image_data);
+    bool updateTexture(std::vector<unsigned char> image_data, int width, int height, int channels);
 };
 
 /**

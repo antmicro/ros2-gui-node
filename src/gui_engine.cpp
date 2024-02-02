@@ -1408,9 +1408,25 @@ bool TextureLoader::recordCommandBuffer(VkCommandPoolSharedPtr command_pool, con
     return checkVulkanResult(result, node->get_logger(), "Failed to wait for device to become idle!");
 }
 
-bool TextureLoader::updateTexture(std::vector<unsigned char> image_data)
+bool TextureLoader::updateTexture(std::vector<unsigned char> image_data, int width, int height, int channels)
 {
     this->image_data = image_data;
+
+    // Recreate image if size or channels constraints are not met
+    if (this->width != width || this->height != height || this->channels != channels)
+    {
+        this->width = width;
+        this->height = height;
+        this->channels = channels;
+        VkResult result = vkDeviceWaitIdle(*gui_engine->getDevice().get());
+        checkVulkanResult(result, node->get_logger(), "Failed to wait for device to become idle!");
+        createImage();
+        createImageView();
+        descriptor_set =
+            ImGui_ImplVulkan_AddTexture(*sampler.get(), *image_view.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        createUploadBuffer();
+    }
+
     return uploadToBuffer() && recordCommandBuffer(gui_engine->getCommandPool(), gui_engine->getGraphicsQueue());
 }
 
