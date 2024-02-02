@@ -89,6 +89,8 @@ bool BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, in
     {
         gui_engine->addTexture(ros_data_name, buffer, width, height, channels);
         last_image_data = buffer;
+        last_image_width = width;
+        last_image_height = height;
         texture_initialized = true;
     }
     std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
@@ -99,6 +101,12 @@ bool BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, in
             return false;
         }
         last_image_data = buffer;
+        if (width != last_image_width || height != last_image_height)
+        {
+            reset_image_size = true;
+            last_image_width = width;
+            last_image_height = height;
+        }
     }
     drawImGuiFrame(texture_loader);
     return true;
@@ -144,7 +152,6 @@ void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_load
         NULL,
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_MenuBar);
     {
-        bool reset_image_size = false;
         ImVec2 view = ImGui::GetWindowSize();
         scale_factor = view.x / base_width;
         ImGui::SetWindowSize(window_configs.window_size, ImGuiCond_Once);
@@ -165,6 +172,7 @@ void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_load
         if (reset_image_size)
         {
             ImGui::SetWindowSize(window_configs.window_size);
+            reset_image_size = false;
         }
         ImGui::Image(
             (ImTextureID)texture_loader->getDescriptorSet(),

@@ -82,9 +82,12 @@ protected:
 
     bool texture_initialized = false;           ///< Whether the texture has been initialized
     bool keep_aspect_ratio = true;              ///< Whether to keep the aspect ratio of the image on resizing
+    bool reset_image_size = false;              ///< Whether to keep the aspect ratio of the image on resizing
     float base_width = 1920;                    ///< The base width for the ImGui window
     float scale_factor = 1.0;                   ///< The scale factor for the ImGui window
     std::vector<unsigned char> last_image_data; ///< The last image data received
+    int last_image_width = 0;                   ///< The last image width received
+    int last_image_height = 0;                  ///< The last image height received
 
     ConverterFunc frame_converter;            ///< Converts received messages to sensor_msgs::msg::Image format
     std::function<void(void)> imgui_callback; ///< Function to call when drawing the ImGui window
