@@ -22,7 +22,7 @@ RosoutWidget::RosoutWidget(
 {
 }
 
-void RosoutWidget::draw()
+bool RosoutWidget::draw()
 {
     using RosoutSubscriber = RosSubscriberData<rcl_interfaces::msg::Log, rcl_interfaces::msg::Log::SharedPtr>;
     std::shared_ptr<RosoutSubscriber> subscriber = this->gui_node->getRosData(ros_data_name)->as<RosoutSubscriber>();
@@ -60,6 +60,7 @@ void RosoutWidget::draw()
         ImGui::EndTable();
     }
     ImGui::End();
+    return true;
 }
 
 } // namespace gui_node

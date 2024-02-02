@@ -162,7 +162,7 @@ private:
                                   ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti |
                                   ImGuiTableFlags_SortTristate | ImGuiTableFlags_ScrollY;
 
-    bool first_draw = true;                ///< Flag indicating if the widget is drawn for the first time
+    bool first_draw = true;                ///< Flag indicating if the widget is drew for the first time
     std::mutex parameters_mutex;           ///< Mutex for accessing the parameters
     std::string curr_param_desc;           ///< Description of the currently selected parameter
     std::string filter_name;               ///< Name of the filter for parameters
@@ -180,8 +180,10 @@ public:
 
     /**
      * Draws the widget using ImGui backend.
+     *
+     * @return bool indicating if the widget is still active.
      */
-    void draw() override;
+    bool draw() override;
 };
 
 } // namespace gui_node

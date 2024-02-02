@@ -11,7 +11,7 @@
 
 namespace gui_node
 {
-void CounterWidget::draw()
+bool CounterWidget::draw()
 {
     // Get the data
     using RosCounterClientData = RosServiceClientData<std_srvs::srv::Trigger, std_srvs::srv::Trigger::Response>;
@@ -53,5 +53,6 @@ void CounterWidget::draw()
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(counter_str.c_str()).x) / 2);
     ImGui::Text("%s", counter_str.c_str());
     ImGui::End();
+    return true;
 }
 } // namespace gui_node

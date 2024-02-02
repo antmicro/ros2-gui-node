@@ -39,9 +39,9 @@ private:
 
     const float base_cornerroundingfactor = 10.0f;      ///< Base corner rounding factor.
     const float base_perimeterthickness = 8.0f;         ///< Base perimeter thickness.
-    float threshold = 0;                                ///< Threshold for the bounding boxes to be drawn.
+    float threshold = 0;                                ///< Threshold for the bounding boxes to be drew.
     ImColor hiddenobjectcolor = ImColor(128, 128, 128); ///< Color for the hidden objects.
-    std::string filterclass;                            ///< Filter class for the bounding boxes to be drawn.
+    std::string filterclass;                            ///< Filter class for the bounding boxes to be drew.
     std::vector<BoundingBox> bounding_boxes;            ///< Vector of bounding boxes.
 
     BBoxExtractor data_extractor; ///< Function to extract bounding boxes and image form the message.

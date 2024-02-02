@@ -59,8 +59,10 @@ protected:
      * @param width Width of the image.
      * @param height Height of the image.
      * @param channels Number of channels in the image.
+     *
+     * @return True if the texture was updated, false otherwise.
      */
-    void updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels);
+    bool updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels);
 
     /**
      * Draws the ImGui window with Image from the provided texture.
@@ -110,8 +112,10 @@ public:
 
     /**
      * Draws the widget.
+     *
+     * @return True if the widget was drew successfully, false otherwise.
      */
-    void draw() override;
+    bool draw() override;
 };
 
 class VideoWidget : public BaseVideoWidget

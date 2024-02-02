@@ -102,7 +102,10 @@ bool GuiNode::render()
         for (auto &widget : widget_map)
         {
             ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
-            widget.second->draw();
+            if (!widget.second->draw())
+            {
+                return false;
+            }
             pos.x += title_bar_size;
             pos.y += title_bar_size;
         }

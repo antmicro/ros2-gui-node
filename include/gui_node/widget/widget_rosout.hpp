@@ -55,8 +55,10 @@ public:
 
     /**
      * Draws the widget using ImGui backend.
+     *
+     * @return bool indicating if the widget is still active.
      */
-    void draw() override;
+    bool draw() override;
 
     /**
      * Sets flags for the ImGui table.

@@ -190,7 +190,7 @@ public:
 The overridden `draw` method is responsible for drawing the Widget and called by the `GuiNode` every time the drawing loop is executed.
 Usually, the `draw` method uses the `getRosData` method of the `GuiNode` to get the `RosData` object, and later visualizes data from it.
 
-The `GuiEngine` class expects Widgets to be drawn using the `Dear ImGui` library.
+The `GuiEngine` class expects Widgets to be drew using the `Dear ImGui` library.
 
 The `draw` method obtains the `RosCounterClientData` object from the `GuiNode`, and verifies if the data has changed since the last invocation of the `draw` method.
 If new data is available, the response is verified to be successful with counter value being incremented.
@@ -200,7 +200,7 @@ This happens to prevent the user from sending requests to the service server whe
 
 ### Adding the Widget to the sample node
 
-The `src/samples/` directory contains examples on how to implement the ROS2 component node and integrate it with the `GuiNode`. 
+The `src/samples/` directory contains examples on how to implement the ROS2 component node and integrate it with the `GuiNode`.
 It can be used as a reference for creating new nodes.
 
 In this section, the `CounterWidget` Widget is added to the `src/samples/sample_gui_node.cpp` file by following an example from the [Widgets and RosData objects](#widgets-and-rosdata-objects) section:

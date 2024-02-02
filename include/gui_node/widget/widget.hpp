@@ -48,8 +48,10 @@ public:
 
     /**
      * Virtual function that is called to draw the widget using the ImGui API.
+     *
+     * @return bool True if the widget is still was drew successfully, false otherwise.
      */
-    virtual void draw() = 0;
+    virtual bool draw() = 0;
 };
 
 } // namespace gui_node

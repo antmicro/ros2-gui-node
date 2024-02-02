@@ -70,7 +70,7 @@ void ControlWidget::updateParameters()
     parameters_mutex.unlock();
 }
 
-void ControlWidget::draw()
+bool ControlWidget::draw()
 {
     ImGui::SetNextWindowSizeConstraints(ImVec2(300, 500), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin(window_name.c_str());
@@ -169,6 +169,7 @@ void ControlWidget::draw()
         parameters_mutex.unlock();
     }
     ImGui::End();
+    return true;
 }
 
 void ControlWidget::drawName(const NodeParameter &parameter)

@@ -53,7 +53,7 @@ int BaseVideoWidget::convert2rgba(sensor_msgs::msg::Image &msg)
     return 4;
 }
 
-void BaseVideoWidget::draw()
+bool BaseVideoWidget::draw()
 {
     std::shared_ptr<RosData> ros_data = gui_node->getRosData(ros_data_name);
 
@@ -66,9 +66,12 @@ void BaseVideoWidget::draw()
         if (channels == -1)
         {
             RCLCPP_ERROR(gui_node->get_logger(), "Unsupported encoding: %s", msg.encoding.c_str());
-            return;
+            return false;
         }
-        updateTexture(msg.data, msg.width, msg.height, channels);
+        if (!updateTexture(msg.data, msg.width, msg.height, channels))
+        {
+            return false;
+        }
     }
     else if (texture_initialized)
     {
@@ -76,9 +79,10 @@ void BaseVideoWidget::draw()
         std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
         drawImGuiFrame(texture_loader);
     }
+    return true;
 }
 
-void BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
+bool BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, int width, int height, int channels)
 {
     std::shared_ptr<GuiEngine> gui_engine = gui_node->getGuiEngine();
     if (!texture_initialized)
@@ -90,10 +94,14 @@ void BaseVideoWidget::updateTexture(const std::vector<unsigned char> &buffer, in
     std::shared_ptr<TextureLoader> texture_loader = gui_engine->getTexture(ros_data_name);
     if (buffer != last_image_data)
     {
-        texture_loader->updateTexture(buffer);
+        if (!texture_loader->updateTexture(buffer))
+        {
+            return false;
+        }
         last_image_data = buffer;
     }
     drawImGuiFrame(texture_loader);
+    return true;
 }
 
 WindowConfig BaseVideoWidget::getWindowConfig(int width, int height)

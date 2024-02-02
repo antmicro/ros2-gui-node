@@ -651,7 +651,7 @@ public:
     /**
      * Draws the frame.
      *
-     * @return bool True if the frame was successfully drawn, false otherwise.
+     * @return bool True if the frame was successfully drew, false otherwise.
      */
     bool draw();
 

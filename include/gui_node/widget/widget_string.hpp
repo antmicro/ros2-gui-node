@@ -45,8 +45,10 @@ public:
 
     /**
      * Draw the widget.
+     *
+     * @return bool indicating if the widget was drew successfully.
      */
-    void draw() override;
+    bool draw() override;
 };
 
 } // namespace gui_node

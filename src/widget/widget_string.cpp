@@ -10,7 +10,7 @@
 
 namespace gui_node
 {
-void StringWidget::draw()
+bool StringWidget::draw()
 {
     if (gui_node->getRosData(ros_data_name)->hasDataChanged())
     {
@@ -20,5 +20,6 @@ void StringWidget::draw()
     ImGui::SetWindowSize(ImVec2(300, 100), ImGuiCond_FirstUseEver);
     ImGui::Text("%s", data.c_str());
     ImGui::End();
+    return true;
 }
 } // namespace gui_node
