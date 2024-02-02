@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Antmicro <www.antmicro.com>
+ * Copyright (c) 2022-2024 Antmicro <www.antmicro.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -35,19 +35,19 @@ struct Object
  */
 struct BoundingBox
 {
-    float xmin;    ///< Minimum x coordinate cooefficient (0-1)
-    float ymin;    ///< Minimum y coordinate cooefficient (0-1)
-    float xmax;    ///< Maximum x coordinate cooefficient (0-1)
-    float ymax;    ///< Maximum y coordinate cooefficient (0-1)
+    float xmin;    ///< Minimum x coordinate coefficient (0-1)
+    float ymin;    ///< Minimum y coordinate coefficient (0-1)
+    float xmax;    ///< Maximum x coordinate coefficient (0-1)
+    float ymax;    ///< Maximum y coordinate coefficient (0-1)
     Object object; ///< Bounding Box object
 
     /**
      * Constructor.
      *
-     * @param xmin Minimum x coordinate cooefficient.
-     * @param ymin Minimum y coordinate cooefficient.
-     * @param xmax Maximum x coordinate cooefficient.
-     * @param ymax Maximum y coordinate cooefficient.
+     * @param xmin Minimum x coordinate coefficient.
+     * @param ymin Minimum y coordinate coefficient.
+     * @param xmax Maximum x coordinate coefficient.
+     * @param ymax Maximum y coordinate coefficient.
      * @param color Color of the bounding box.
      * @param label Label of the bounding box.
      * @param score Score of the bounding box.
