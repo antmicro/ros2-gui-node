@@ -112,7 +112,7 @@ WindowConfig BaseVideoWidget::getWindowConfig(int width, int height)
     const int title_bar_size = std::round(ImGui::GetFontSize()) + style.FramePadding.y * 2;
     // To reduce window flickering the aspect ration is rounded to 1 decimal place
     float aspect_ratio = round((float)width / (float)height * 10) / 10;
-    ImVec2 offset = ImVec2(style.WindowPadding.x * 2, style.WindowPadding.y * 2 + title_bar_size);
+    ImVec2 offset = ImVec2(style.WindowPadding.x * 2, style.WindowPadding.y * 2 + title_bar_size * 2);
     ImVec2 window_size = ImVec2(width + offset.x, width / aspect_ratio + offset.y);
     return WindowConfig{aspect_ratio, offset, window_size};
 }
@@ -136,17 +136,41 @@ void BaseVideoWidget::drawImGuiFrame(std::shared_ptr<TextureLoader> texture_load
     ImGui::SetNextWindowSizeConstraints(
         ImVec2(0, 0),
         ImVec2(FLT_MAX, FLT_MAX),
-        resizeCallback,
+        keep_aspect_ratio ? resizeCallback : nullptr,
         (void *)&window_configs);
-    ImGui::Begin(window_name.c_str(), NULL, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-    ImVec2 view = ImGui::GetWindowSize();
-    scale_factor = view.x / base_width;
-    window_configs = getWindowConfig(texture_loader->getWidth(), texture_loader->getHeight());
-    ImGui::SetWindowSize(window_configs.window_size, ImGuiCond_Once);
-    ImGui::Image(
-        (ImTextureID)texture_loader->getDescriptorSet(),
-        ImVec2(view.x - window_configs.offset.x, view.y - window_configs.offset.y));
-    imgui_callback();
+    // Dropdown menu to set keep_aspect_ratio
+    ImGui::Begin(
+        window_name.c_str(),
+        NULL,
+        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_MenuBar);
+    {
+        bool reset_image_size = false;
+        ImVec2 view = ImGui::GetWindowSize();
+        scale_factor = view.x / base_width;
+        ImGui::SetWindowSize(window_configs.window_size, ImGuiCond_Once);
+        ImGui::BeginMenuBar();
+        {
+            if (ImGui::BeginMenu("Options"))
+            {
+                ImGui::Checkbox("Keep aspect ratio", &keep_aspect_ratio);
+                // Set button size to the same size as the checkbox
+                if (ImGui::Button("Reset window size", ImVec2(ImGui::GetItemRectSize().x, 0)))
+                {
+                    reset_image_size = true;
+                }
+                ImGui::EndMenu();
+            }
+        }
+        ImGui::EndMenuBar();
+        if (reset_image_size)
+        {
+            ImGui::SetWindowSize(window_configs.window_size);
+        }
+        ImGui::Image(
+            (ImTextureID)texture_loader->getDescriptorSet(),
+            ImVec2(view.x - window_configs.offset.x, view.y - window_configs.offset.y));
+        imgui_callback();
+    }
     ImGui::End();
 }
 } // namespace gui_node

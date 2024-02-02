@@ -81,6 +81,7 @@ protected:
     int convert2rgba(sensor_msgs::msg::Image &msg);
 
     bool texture_initialized = false;           ///< Whether the texture has been initialized
+    bool keep_aspect_ratio = true;              ///< Whether to keep the aspect ratio of the image on resizing
     float base_width = 1920;                    ///< The base width for the ImGui window
     float scale_factor = 1.0;                   ///< The scale factor for the ImGui window
     std::vector<unsigned char> last_image_data; ///< The last image data received
