@@ -293,9 +293,12 @@ void ControlWidget::drawValue(const NodeParameter &parameter)
                     &int_range.to_value,
                     "%ld",
                     ImGuiSliderFlags_AlwaysClamp);
+                // Clamp value to step if manual input is used
                 if (int_range.step != 0)
                 {
-                    parameter.value->integer_value = parameter.value->integer_value / int_range.step * int_range.step;
+                    parameter.value->integer_value = parameter.value->integer_value /
+                                                     static_cast<int64_t>(int_range.step) *
+                                                     static_cast<int64_t>(int_range.step);
                 }
             });
         break;
@@ -325,6 +328,7 @@ void ControlWidget::drawValue(const NodeParameter &parameter)
                     &float_range.to_value,
                     "%.3f",
                     ImGuiSliderFlags_AlwaysClamp);
+                // Clamp value to step if manual input is used
                 if (float_range.step != 0.0f)
                 {
                     parameter.value->double_value = parameter.value->double_value / float_range.step * float_range.step;
