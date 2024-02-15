@@ -30,8 +30,9 @@ void DetectionWidget::imgui_callback()
     ImVec2 window_pos = ImGui::GetWindowPos();
     ImVec2 window_size = ImGui::GetWindowSize();
     window_size.x -= style.WindowPadding.x * 2;
-    window_size.y -= style.WindowPadding.y * 2 + title_bar_size;
-    ImVec2 offset = ImVec2(window_pos.x + style.WindowPadding.x, window_pos.y + style.WindowPadding.y + title_bar_size);
+    window_size.y -= style.WindowPadding.y * 2 + title_bar_size * 2;
+    ImVec2 offset =
+        ImVec2(window_pos.x + style.WindowPadding.x, window_pos.y + style.WindowPadding.y + title_bar_size * 2);
 
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
