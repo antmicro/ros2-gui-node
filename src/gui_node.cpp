@@ -56,6 +56,11 @@ bool GuiNode::prepare(const std::string &application_name, bool maximize_window)
     bool status = gui_engine->init(maximize_window);
     if (status)
     {
+        if (!this->render())
+        {
+            RCLCPP_FATAL(get_logger(), "Failed to render");
+            return false;
+        }
         timer = this->create_wall_timer(
             std::chrono::milliseconds(10),
             [this]() -> void
