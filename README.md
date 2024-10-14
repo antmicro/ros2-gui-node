@@ -1,8 +1,8 @@
-# ROS2 GuiNode
+# ROS 2 GuiNode
 
 Copyright (c) 2022-2024 [Antmicro](https://www.antmicro.com)
 
-`GuiNode` is a library for visualizing data from ROS2 topics and services.
+`GuiNode` is a library for visualizing data from ROS 2 topics and services.
 It provides tools for manipulating Widgets and data objects, which can be used for data visualization.
 The graphical user interface is implemented using the Vulkan API, GLFW3, and Dear ImGui libraries.
 
@@ -15,14 +15,14 @@ The graphical user interface is implemented using the Vulkan API, GLFW3, and Dea
 
 Project dependencies:
 
-* [ROS2 Humble](https://docs.ros.org/en/humble/index.html)
+* [ROS 2 Humble](https://docs.ros.org/en/humble/index.html)
 * `OpenCV`
 * `Vulkan`
 * `GLFW3`
 
 The `GuiNode` uses the `colcon` build system to build the project.
-First, you need to source the `ROS2` environment, and then you can use the `colcon` command to build the project.
-You should replace `<path_to_ros2_env>` with the path to the ROS2 environment setup script (e.g. `/opt/ros/setup.bash`).
+First, you need to source the `ROS 2` environment, and then you can use the `colcon` command to build the project.
+You should replace `<path_to_ros2_env>` with the path to the ROS 2 environment setup script (e.g. `/opt/ros/setup.bash`).
 
 ```bash
 source <path_to_ros2_env>
@@ -53,13 +53,13 @@ The following Widgets are already implemented in the `GuiNode`:
 
 * `VideoWidget` - displays an image from the `sensor_msgs::msg::Image` message type.
 * `StringWidget` - displays the `std::string` data in a text box.
-* `RosoutWidget` - displays messages from the `/rosout` topic (the ROS2 logging topic) in table view.
+* `RosoutWidget` - displays messages from the `/rosout` topic (the ROS 2 logging topic) in table view.
 * `DetectionWidget` - displays an image from the `sensor_msgs::msg::Image` message type and draws bounding boxes.
 
 Widgets are using `RosData` objects to get fresh data from topics or services.
 You should create the corresponding `RosData` object add it to the `GuiNode` before calling the `gui_node->prepare()` method.
 
-The `RosData` objects are responsible for handling data from ROS2 topics or services.
+The `RosData` objects are responsible for handling data from ROS 2 topics or services.
 
 Below is an example of how to add `RosoutWidget` to the `GuiNode` instance:
 
@@ -90,8 +90,8 @@ gui_node_ptr->prepare("Window name");
 
 `GuiNode` offers the following set of implemented `RosData` objects:
 
-* `RosPublisherData` - publishes data to a ROS2 topic and saves the last published data.
-* `RosSubscriberData` - subscribes to a ROS2 topic and provides the last received data.
+* `RosPublisherData` - publishes data to a ROS 2 topic and saves the last published data.
+* `RosSubscriberData` - subscribes to a ROS 2 topic and provides the last received data.
 * `RosServiceServerData` - provides a service server that saves data from the last processed request.
 * `RosServiceClientData` - provides a service client that can be used to send a request to the server and save data from the response.
 
@@ -200,7 +200,7 @@ This happens to prevent the user from sending requests to the service server whe
 
 ### Adding the Widget to the sample node
 
-The `src/samples/` directory contains examples on how to implement the ROS2 component node and integrate it with the `GuiNode`.
+The `src/samples/` directory contains examples on how to implement the ROS 2 component node and integrate it with the `GuiNode`.
 It can be used as a reference for creating new nodes.
 
 In this section, the `CounterWidget` Widget is added to the `src/samples/sample_gui_node.cpp` file by following an example from the [Widgets and RosData objects](#widgets-and-rosdata-objects) section:
@@ -288,7 +288,7 @@ ros2 launch gui_node sample_launch.py
 
 Formatting dependencies:
 
-* `ament_uncrustify` (ROS2 package)
+* `ament_uncrustify` (ROS 2 package)
 * `clang-format`
 * `clang-tidy`
 
