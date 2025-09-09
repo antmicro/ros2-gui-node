@@ -16,7 +16,7 @@ This demo requires:
 * A CUDA-enabled NVIDIA GPU for inference acceleration
 * [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) to clone all necessary repositories
 * [Docker](https://www.docker.com/) to use a prepared environment
-* [nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit) to provide access to the GPU in the Docker container
+* [nvidia-container-toolkit](https://github.com/nvidia/nvidia-container-toolkit) to provide access to the GPU in the Docker container
 
 All of the necessary build, runtime and development dependencies are provided in the [Dockerfile](./Dockerfile).
 It contains:
@@ -82,6 +82,14 @@ Then, run a Docker container under the `kenning-ros2-demo` directory with:
 `NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-demo`, run `DOCKER_IMAGE=kenning-ros2-demo ./run-docker.sh`.
 Also, if you want to change the camera path, set the `CAMERA_PATH` variable with your desired path before running the script.
 
+Scripts checks for the presence of NVIDIA drivers - if NVIDIA GPU is not present, the container will run in CPU-only mode.
+If you want to explicitly run the container without GPU acceleration, run:
+
+
+```
+../run-docker.sh cpu
+```
+
 This script starts the image with:
 
 * `--device=/dev/video0:/dev/video0` - adds a camera device to the container's context
@@ -119,7 +127,7 @@ In this example, we will use the Apache TVM compiler to compile the model for th
 First, install Kenning with its necessary dependencies:
 
 ```bash
-pip install kenning/
+pip install ./kenning[object_detection]
 ```
 
 Then, run the [scenario with YOLACT optimizations for the GPU](https://github.com/antmicro/kenning/blob/main/scripts/jsonconfigs/yolact-tvm-gpu-detection.json).
@@ -130,6 +138,12 @@ It will:
 
 ```bash
 kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
+```
+
+To evaluate execution of the model **without** GPU acceleration, run:
+
+```bash
+kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-cpu-optimization.json
 ```
 
 ## Building GUI node and Camera node
@@ -166,8 +180,20 @@ In case you want to change the path to the camera, use the `camera_path:=<new-pa
 ros2 launch gui_node kenning-instance-segmentation.py camera_path:=/dev/video1
 ```
 
+For CPU-only demo of the instance segmentation run [`kenning-instance-segmentation-cpu.py`](./kenning-instance-segmentation-cpu.py) as follows:
+
+```
+ros2 launch gui_node kenning-instance-segmentation-cpu.py
+```
+
+To change camera path, use camera_path parameter as follows:
+
+```
+ros2 launch gui_node kenning-instance-segmentation-cpu.py camera_path:=/dev/video1
+```
+
 Lastly, a GUI should appear, with:
 
 * Direct view from Camera node
-* Instance segmentation view based on predictions from Kenning (started using `kenning flow` with [`kenning-instance-segmentation.json`](./kenning-instance-segmentation.json))
+* Instance segmentation view based on predictions from Kenning (started using `kenning flow` with [`kenning-instance-segmentation.json`](./kenning-instance-segmentation.json) or [`kenning-instance-segmentation-cpu.json`](./kenning-instance-segmentation-cpu.json) if you don't use GPU )
 * A widget visualizing a list of detected objects, with a possibility to filter out not interesting classes.
