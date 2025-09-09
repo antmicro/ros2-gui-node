@@ -207,6 +207,10 @@ if (BUILD_KENNING_YOLACT_DEMO)
     install (FILES examples/kenning-instance-segmentation/kenning-instance-segmentation.py
         DESTINATION share/${PROJECT_NAME}
     )
+
+    install (FILES examples/kenning-instance-segmentation/kenning-instance-segmentation-cpu.py
+        DESTINATION share/${PROJECT_NAME}
+    )
 endif(BUILD_KENNING_YOLACT_DEMO)
 
 #######################
