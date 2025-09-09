@@ -3,11 +3,9 @@ image: $CI_IMAGE
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
-before_script:
-  - source /opt/ros/setup.bash
-
 example-build:
   script:
+    - source /opt/ros/setup.bash
     - colcon build
     - colcon test
     - colcon test-result --verbose
