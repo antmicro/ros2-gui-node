@@ -6,6 +6,7 @@
 
 #include <kenning_computer_vision_msgs/msg/box_msg.hpp>
 #include <kenning_computer_vision_msgs/msg/segmentation_msg.hpp>
+#include <kenning_computer_vision_msgs/msg/frame_segmentation_msg.hpp>
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -22,7 +23,7 @@ namespace gui_node
 {
 
 using RosSegmentationSubscriberData =
-    RosSubscriberData<kenning_computer_vision_msgs::msg::SegmentationMsg, kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr>;
+    RosSubscriberData<kenning_computer_vision_msgs::msg::FrameSegmentationMsg, kenning_computer_vision_msgs::msg::FrameSegmentationMsg::SharedPtr>;
 using MsgImageSharedPtr = sensor_msgs::msg::Image::SharedPtr;
 using RosImageSubscriberData = RosSubscriberData<sensor_msgs::msg::Image, sensor_msgs::msg::Image::SharedPtr>;
 using MsgRosoutSharedPtr = rcl_interfaces::msg::Log::SharedPtr;
@@ -43,7 +44,7 @@ private:
      * @return sensor_msgs::msg::Image The image to display.
      */
     sensor_msgs::msg::Image prep_display(
-        kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr instance_segmentation_msg,
+        kenning_computer_vision_msgs::msg::FrameSegmentationMsg::SharedPtr instance_segmentation_msg,
         std::vector<BoundingBox> &bounding_boxes,
         const std::string &filterclass,
         const float &threshold)
@@ -53,17 +54,21 @@ private:
         int color_idx;
         std::string class_name;
 
-        int height = instance_segmentation_msg->frame.height;
-        int width = instance_segmentation_msg->frame.width;
+        kenning_computer_vision_msgs::msg::VideoFrameMsg& frame = instance_segmentation_msg->frame;
 
-        cv::Mat frame(height, width, CV_8UC3, instance_segmentation_msg->frame.data.data());
+        int height = frame.frame.height;
+        int width = frame.frame.width;
 
-        for (size_t i = 0; i < instance_segmentation_msg->boxes.size(); i++)
+        cv::Mat mat_frame(height, width, CV_8UC3, frame.frame.data.data());
+
+        kenning_computer_vision_msgs::msg::SegmentationMsg& segmentation = instance_segmentation_msg->segmentation;
+
+        for (size_t i = 0; i < segmentation.boxes.size(); i++)
         {
-            class_name = instance_segmentation_msg->classes[i];
-            score = instance_segmentation_msg->scores[i] * 100;
+            class_name = segmentation.classes[i];
+            score = segmentation.scores[i] * 100;
             color_idx = i % im_colors.size();
-            box = instance_segmentation_msg->boxes[i];
+            box = segmentation.boxes[i];
             bounding_boxes.push_back(
                 BoundingBox(box.xmin, box.ymin, box.xmax, box.ymax, class_name, score, im_colors[color_idx]));
 
@@ -72,17 +77,17 @@ private:
             {
                 // Apply mask
                 cv::Mat mask(
-                    instance_segmentation_msg->masks[i].dimension[0],
-                    instance_segmentation_msg->masks[i].dimension[1],
+                    segmentation.masks[i].dimension[0],
+                    segmentation.masks[i].dimension[1],
                     CV_8UC1,
-                    instance_segmentation_msg->masks[i].data.data());
+                    segmentation.masks[i].data.data());
                 cv::resize(mask, mask, cv::Size(width, height));
                 cv::cvtColor(mask, mask, cv::COLOR_GRAY2BGR);
                 mask.setTo(colors[color_idx], mask);
-                cv::addWeighted(mask, 0.4, frame, 1.0, 0, frame);
+                cv::addWeighted(mask, 0.4, mat_frame, 1.0, 0, mat_frame);
             }
         }
-        return instance_segmentation_msg->frame;
+        return frame.frame;
     }
 
     /// ImGui color definitions
@@ -150,7 +155,7 @@ public:
         std::shared_ptr<RosSegmentationSubscriberData> subscriber_instance_segmentation = std::make_shared<RosSegmentationSubscriberData>(
             gui_node_ptr,
             "instance_segmentation_kenning",
-            [](const kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr msg) -> kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr
+            [](const kenning_computer_vision_msgs::msg::FrameSegmentationMsg::SharedPtr msg) -> kenning_computer_vision_msgs::msg::FrameSegmentationMsg::SharedPtr
             { return msg; });
         gui_node_ptr->addRosData("instance_segmentation_subscriber", subscriber_instance_segmentation);
 
@@ -168,7 +173,7 @@ public:
             {
                 std::shared_ptr<RosSegmentationSubscriberData> subscriber_instance_segmentation =
                     gui_node_ptr->getRosData("instance_segmentation_subscriber")->as<RosSegmentationSubscriberData>();
-                kenning_computer_vision_msgs::msg::SegmentationMsg::SharedPtr instance_segmentation_msg = subscriber_instance_segmentation->getData();
+                kenning_computer_vision_msgs::msg::FrameSegmentationMsg::SharedPtr instance_segmentation_msg = subscriber_instance_segmentation->getData();
 
                 msg = prep_display(instance_segmentation_msg, boxes, filterclass, threshold);
             });
