@@ -1,8 +1,7 @@
 [
   {
-    "type": "kenning.dataproviders.ros2_camera_node_receiver.ROS2CameraNodeDataProvider",
+    "type": "kenning.dataproviders.ros2_camera_node_data_provider.ROS2CameraNodeDataProvider",
     "parameters": {
-      "node_name": "ros2_camera_node_dataloader",
       "topic_name": "camera_frame",
       "output_memory_layout": "NCHW",
       "output_width": 550,
@@ -44,7 +43,6 @@
   {
     "type": "kenning.outputcollectors.ros2_yolact_outputcollector.ROS2YolactOutputCollector",
     "parameters": {
-      "node_name": "ros2_yolact_outputcollector",
       "topic_name": "instance_segmentation_kenning",
       "input_color_format": "BGR",
       "input_memory_layout": "NCHW"
