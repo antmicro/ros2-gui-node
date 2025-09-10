@@ -7,9 +7,9 @@
 import launch
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
-from launch.actions import ExecuteProcess
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -51,9 +51,15 @@ def generate_launch_description():
         on_exit=launch.actions.Shutdown()
     )
 
-    kenning_node = ExecuteProcess(
+    kenning_node = Node(
         name="kenning_node",
-        cmd='kenning flow --json-cfg ./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.json'.split(' ')  # noqa: E501
+        executable="kenning",
+        arguments=["--verbosity","DEBUG"],
+        parameters=[{
+            "pipeline":["flow"],
+            "config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.json"
+        }],
+        on_exit=launch.actions.Shutdown()
     )
 
     return launch.LaunchDescription([
