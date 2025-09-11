@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
-ENV INST 'env DEBIAN_FRONTEND=noninteractive apt-get install -y'
-ENV PIPINST 'python3 -m pip install --no-cache-dir --upgrade'
+ENV INST='env DEBIAN_FRONTEND=noninteractive apt-get install -y'
+ENV PIPINST='python3 -m pip install --no-cache-dir --upgrade'
 
 RUN apt-get update && $INST \
     apt-utils \
@@ -17,9 +17,9 @@ RUN apt-get update && $INST \
 RUN locale-gen en_US.UTF-8 && \
     update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
@@ -124,9 +124,3 @@ RUN cp /tvm-config.cmake config.cmake && \
     CONDA_BUILD=yes LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH $PIPINST /tvm/python && \
     rm -rf /tvm/build && ldconfig
 WORKDIR /
-
-# Install non CUDA TVM, without it example with cpu inference breaks down
-RUN pip install apache-tvm
-
-# Add condition that check whether TVM for CUDA or CPU should be used
-RUN printf "if [[ -v USE_CPU ]]; then \n export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/usr/local/lib/python3.10/dist-packages/tvm" \n ldconfig \nfi\n" >> /root/.bashrc

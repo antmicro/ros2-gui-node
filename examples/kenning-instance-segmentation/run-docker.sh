@@ -28,15 +28,11 @@ if ! command -v nvidia-smi >/dev/null 2>&1
 then
     echo "Nvidia GPU not found, using CPU"
     GPU_PARAMS=""
-
-    USE_CPU="-e USE_CPU=1"
 fi
 
 if [[ $1 = "cpu" ]]; then
     echo "Selected to run example on cpu"
-    GPU_PARAMS=""
-    
-    USE_CPU="-e USE_CPU=1"
+    GPU_PARAMS=""    
 fi
 
 docker run -it \
@@ -47,6 +43,5 @@ docker run -it \
     $GPU_PARAMS \
     -e DISPLAY=$DISPLAY \
     -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
-    $USE_CPU \
     $DOCKER_IMAGE \
     /bin/bash
