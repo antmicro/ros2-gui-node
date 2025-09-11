@@ -85,7 +85,6 @@ Also, if you want to change the camera path, set the `CAMERA_PATH` variable with
 Scripts checks for the presence of NVIDIA drivers - if NVIDIA GPU is not present, the container will run in CPU-only mode.
 If you want to explicitly run the container without GPU acceleration, run:
 
-
 ```
 ../run-docker.sh cpu
 ```
@@ -124,10 +123,24 @@ cd /data
 To get the runtime to perform in real time, you need to first optimize YOLACT model for your machine.
 In this example, we will use the Apache TVM compiler to compile the model for the GPU.
 
+### Install TVM for CPU only inference
+
+If you run CPU only inference you need to install:
+
+```bash
+pip install --force-reinstall apache-tvm
+```
+
+and then run:
+
+```bash
+ldconfig
+```
+
 First, install Kenning with its necessary dependencies:
 
 ```bash
-pip install ./kenning[object_detection]
+pip install "./kenning[object_detection]"
 ```
 
 Then, run the [scenario with YOLACT optimizations for the GPU](https://github.com/antmicro/kenning/blob/main/scripts/jsonconfigs/yolact-tvm-gpu-detection.json).
@@ -168,7 +181,7 @@ Then, to run the demo, load the ROS 2 environment including the newly built pack
 source install/setup.sh
 ```
 
-Next, launch Kenning, Camera node, and GUI node using the launch file [`kenning-instance-segmentation.py`](./kenning-instance-segmentation.py):
+Next, launch Kenning, Camera node, and GUI node using the launch file [`kenning-instance-segmentation.py use_gui:=True`](./kenning-instance-segmentation.py):
 
 ```
 ros2 launch gui_node kenning-instance-segmentation.py
@@ -180,7 +193,7 @@ In case you want to change the path to the camera, use the `camera_path:=<new-pa
 ros2 launch gui_node kenning-instance-segmentation.py camera_path:=/dev/video1
 ```
 
-For CPU-only demo of the instance segmentation run [`kenning-instance-segmentation-cpu.py`](./kenning-instance-segmentation-cpu.py) as follows:
+For CPU-only demo of the instance segmentation run [`kenning-instance-segmentation-cpu.py use_gui:=True`](./kenning-instance-segmentation-cpu.py) as follows:
 
 ```
 ros2 launch gui_node kenning-instance-segmentation-cpu.py
