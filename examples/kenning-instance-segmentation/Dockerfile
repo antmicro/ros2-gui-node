@@ -83,49 +83,15 @@ RUN apt-get update && apt-get upgrade -y && $INST \
     zlib1g-dev \
     && apt-get -y clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 
-RUN $PIPINST \
-    Cython==0.29.35 \
-    Pillow \
-    argcomplete \
-    astunparse \
-    boto3 \
-    botocore \
-    cmake \
-    flake8-blind-except \
-    flake8-builtins \
-    flake8-class-newline \
-    flake8-comprehensions \
-    flake8-deprecated \
-    flake8-import-order \
-    flake8-quotes \
-    isort \
-    jsonschema \
-    matplotlib \
-    memory_profiler \
-    mock \
-    numpy \
-    onnx \
-    onnxruntime \
-    onnxruntime_gpu \
-    pandas \
-    pip \
-    pre-commit \
-    psutil \
-    pycocotools \
-    pytest \
-    pytest-repeat \
-    pytest-rerunfailures \
-    scikit_learn \
-    scipy \
-    setuptools \
-    tqdm \
-    wheel && \
-    ldconfig
-
 RUN curl https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo && \
     chmod a+x /usr/local/bin/repo
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
+
+RUN /usr/bin/python -m pip install --upgrade pip
+RUN /usr/bin/python -m pip install --upgrade setuptools wheel twine check-wheel-contents cmake
+
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.10
 
 # ROS
 WORKDIR /ros2-build
@@ -137,10 +103,9 @@ RUN mkdir src && \
     rosdep install --rosdistro=humble --from-paths src --ignore-src -y --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers ignition-math6 ignition-cmake2" && \
     apt-get remove -y pybind11-dev && \
     $PIPINST "pybind11[global]" && \
-    colcon build --install-base /opt/ros && \
+    colcon build --install-base /opt/ros --cmake-args "-DCMAKE_POLICY_VERSION_MINIMUM=3.10" --cmake-force-configure --cmake-clean-first --cmake-clean-cache && \
     rm -rf /ros2-build && \
     rm -rf /var/lib/apt/lists/*
-WORKDIR /
 
 COPY ./third-party/vision_opencv /vision_opencv
 WORKDIR /vision_opencv/cv_bridge
@@ -159,3 +124,9 @@ RUN cp /tvm-config.cmake config.cmake && \
     CONDA_BUILD=yes LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH $PIPINST /tvm/python && \
     rm -rf /tvm/build && ldconfig
 WORKDIR /
+
+# Install non CUDA TVM, without it example with cpu inference breaks down
+RUN pip install apache-tvm
+
+# Add condition that check whether TVM for CUDA or CPU should be used
+RUN printf "if [[ -v USE_CPU ]]; then \n export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/usr/local/lib/python3.10/dist-packages/tvm" \n ldconfig \nfi\n" >> /root/.bashrc
