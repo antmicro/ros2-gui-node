@@ -7,8 +7,10 @@ import launch
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+
 
 def generate_launch_description():
     camera_path = DeclareLaunchArgument(
@@ -16,6 +18,15 @@ def generate_launch_description():
         default_value="/dev/video0",
         description="Path to camera device"
     )
+
+    use_gui = LaunchConfiguration('use_gui')
+
+    use_gui_arg = DeclareLaunchArgument(
+        "use_gui",
+        default_value="False",
+        description="Set to true if you want to use GUI"
+    )
+
     camera_node_container = ComposableNodeContainer(
         name='camera_node_container',
         namespace='camera_node',
@@ -46,21 +57,22 @@ def generate_launch_description():
                 name='sample_gui_node')
         ],
         output='both',
-        on_exit=launch.actions.Shutdown()
+        on_exit=launch.actions.Shutdown(),
+        condition=IfCondition(use_gui)
     )
 
     kenning_node = Node(
         name="kenning_node",
         executable="kenning",
-        arguments=["--verbosity","DEBUG"],
+        arguments=["ros","flow","--verbosity","DEBUG"],
         parameters=[{
-            "pipeline":["flow"],
             "config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation-cpu.json"
         }],
         on_exit=launch.actions.Shutdown()
     )
 
     return launch.LaunchDescription([
+        use_gui_arg,
         camera_path,
         camera_node_container,
         gui_node,
