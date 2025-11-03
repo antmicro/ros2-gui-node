@@ -1,7 +1,8 @@
-# Copyright (c) 2025 Antmicro <www.antmicro.com>
+# Copyright (c) 2022-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 
 import launch
 from launch_ros.actions import ComposableNodeContainer
@@ -10,7 +11,8 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-
+from launch.actions import SetEnvironmentVariable
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     camera_path = DeclareLaunchArgument(
@@ -53,7 +55,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='gui_node',
-                plugin='gui_node::KenningYolactGuiComponent',
+                plugin='gui_node::KenningMultiModelGuiComponent',
                 name='sample_gui_node')
         ],
         output='both',
@@ -61,16 +63,32 @@ def generate_launch_description():
         condition=IfCondition(use_gui)
     )
 
-    kenning_node = Node(
-        name="kenning_node",
+    kenning_yolact_node = Node(
+        name="kenning_yolact_node",
+        executable="kenning",
+        arguments=["ros","flow","--verbosity","INFO"],
+        parameters=[{
+            "config_file":"./src/gui_node/examples/kenning-multimodel-demo/kenning-instance-segmentation.yaml"
+        }]
+    )
+
+    kenning_mmpose_node = Node(
+        name="kenning_mmpose_node",
         executable="kenning",
         arguments=["ros","flow","--verbosity","DEBUG"],
         parameters=[{
-            "config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation-cpu.json"
-        }],
-        on_exit=launch.actions.Shutdown()
+            "config_file":"./src/gui_node/examples/kenning-multimodel-demo/kenning-pose-from-detection.yaml"
+        }]
     )
 
+    kenning_dinov2_node = Node(
+        name="kenning_dinov2_node",
+        executable="kenning",
+        arguments=["ros","flow","--verbosity","DEBUG"],
+        parameters=[{
+            "config_file":"./src/gui_node/examples/kenning-multimodel-demo/kenning-depth-estimation.yaml"
+        }]
+    )
     nvidia_mps_node = ExecuteProcess(
         name="cuda_mps_node",
         cmd=["nvidia-cuda-mps-control", "-f"],
@@ -79,19 +97,28 @@ def generate_launch_description():
             "CUDA_MPS_LOG_DIRECTORY": "/tmp/mps-logs",
         },
         on_exit=launch.actions.Shutdown(),
-        condition=IfCondition(start_nvidia_mps)
     )
 
+    envs = []
+
+    # Check if variables are present in the system
+    if ("CUDA_MPS_PIPE_DIRECTORY" in os.environ.keys() and 
+        "CUDA_MPS_LOG_DIRECTORY" in os.environ.keys()):
+        envs.append([
+            SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", "/tmp/nvidia-mps"),
+            SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", "/tmp/mps-logs")
+        ])
+
     return launch.LaunchDescription([
-        SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", "/tmp/nvidia-mps",
-                               condition=IfCondition(start_nvidia_mps)),
-        SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", "/tmp/mps-logs",
-                               condition=IfCondition(start_nvidia_mps)),
-        nvidia_mps_node,
         start_nvidia_mps_arg,
+        SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", os.getenv("CUDA_MPS_PIPE_DIRECTORY","/tmp/nvidia-mps")),
+        SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", os.getenv("CUDA_MPS_LOG_DIRECTORY","/tmp/mps-logs")),
+        nvidia_mps_node,
         use_gui_arg,
         camera_path,
         camera_node_container,
         gui_node,
-        kenning_node,
+        kenning_yolact_node,
+        kenning_mmpose_node,
+        kenning_dinov2_node
     ])
