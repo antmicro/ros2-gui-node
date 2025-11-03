@@ -30,6 +30,7 @@ set(WIDGET_SOURCES
     src/widget/widget_counter.cpp
     src/widget/widget_detection.cpp
     src/widget/widget_pose.cpp
+    src/widget/widget_depth.cpp
     src/widget/widget_rosout.cpp
     src/widget/widget_string.cpp
     src/widget/widget_video.cpp
