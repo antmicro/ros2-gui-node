@@ -62,7 +62,7 @@ xhost +local:
 After this, run a Docker container under the `kenning-ros2-demo` directory with:
 
 ```
-../run-docker.sh
+./src/gui_node/environments/run-docker.sh
 ```
 
 `NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-demo`, run `DOCKER_IMAGE=kenning-ros2-demo ./run-docker.sh`.
