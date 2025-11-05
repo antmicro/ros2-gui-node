@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Antmicro <www.antmicro.com>
+# Copyright 2022-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 project(gui_node VERSION 0.0.1)
 
 option(BUILD_KENNING_YOLACT_DEMO "Builds demo application running visualization of YOLACT instance segmentation with Kenning" OFF)
+option(BUILD_KENNING_MULTIMODEL_DEMO "Builds demo application running multiple models using Kenning ROS 2 integration for Ampere+ architectures" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -209,11 +210,48 @@ if (BUILD_KENNING_YOLACT_DEMO)
     install (FILES examples/kenning-instance-segmentation/kenning-instance-segmentation.py
         DESTINATION share/${PROJECT_NAME}
     )
+endif(BUILD_KENNING_YOLACT_DEMO)
 
-    install (FILES examples/kenning-instance-segmentation/kenning-instance-segmentation-cpu.py
+if (BUILD_KENNING_MULTIMODEL_DEMO)
+    # package with necessary messages to communicate with Kenning
+    find_package(kenning_computer_vision_msgs REQUIRED)
+
+    ###################################
+    # KenningMultiModelDemoGuiComponent
+    ###################################
+    add_library(kenning_multimodel_demo SHARED
+        examples/kenning-multimodel-demo/kenning_multimodel_demo.cpp
+    )
+
+    target_link_libraries(kenning_multimodel_demo
+        ${PROJECT_NAME}
+        ${PROJECT_NAME}_core_widgets
+        ${OpenCV_LIBS}
+    )
+
+    target_include_directories(kenning_multimodel_demo PUBLIC
+        ${OpenCV_INCLUDE_DIRS}
+    )
+
+    ament_target_dependencies(kenning_multimodel_demo
+        kenning_computer_vision_msgs
+        rclcpp
+        rclcpp_components
+        sensor_msgs
+    )
+
+    rclcpp_components_register_nodes(kenning_multimodel_demo "gui_node::KenningMultiModelGuiComponent")
+
+    install(TARGETS
+        kenning_multimodel_demo
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+
+    install (FILES examples/kenning-multimodel-demo/kenning-multimodel-demo.py
         DESTINATION share/${PROJECT_NAME}
     )
-endif(BUILD_KENNING_YOLACT_DEMO)
+endif(BUILD_KENNING_MULTIMODEL_DEMO)
 
 #######################
 # SamplePublisherComponent
