@@ -34,7 +34,7 @@ It can be either pulled from the Docker registry using:
 docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
 ```
 
-or built from scratch with:
+or you can build it from scrach, by cloning ros2-gui-node and executing:
 
 ```
 sudo ./build-docker.sh
@@ -76,7 +76,7 @@ xhost +local:
 Then, run a Docker container under the `kenning-ros2-demo` directory with:
 
 ```
-../run-docker.sh
+./src/gui_node/environments/run-docker.sh
 ```
 
 `NOTE:` In case you have built the image manually, e.g. with name `kenning-ros2-demo`, run `DOCKER_IMAGE=kenning-ros2-demo ./run-docker.sh`.
@@ -143,20 +143,20 @@ First, install Kenning with its necessary dependencies:
 pip install "./kenning[object_detection]"
 ```
 
-Then, run the [scenario with YOLACT optimizations for the GPU](https://github.com/antmicro/kenning/blob/main/scripts/jsonconfigs/yolact-tvm-gpu-detection.json).
+Then, run the [scenario with YOLACT optimizations for the GPU](./examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.yaml).
 It will:
 
 * Load the `yolact.onnx` model, containing YOLACT implementation
 * Compile the model using TVM for a CUDA-enabled GPU with support for CUDNN and CUBLAS libraries.
 
 ```bash
-kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.json
+kenning optimize --cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-gpu-optimization.yaml
 ```
 
 To evaluate execution of the model **without** GPU acceleration, run:
 
 ```bash
-kenning optimize --json-cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-cpu-optimization.json
+kenning optimize --cfg src/gui_node/examples/kenning-instance-segmentation/yolact-tvm-cpu-optimization.yaml
 ```
 
 ## Building GUI node and Camera node
@@ -208,5 +208,5 @@ ros2 launch gui_node kenning-instance-segmentation-cpu.py camera_path:=/dev/vide
 Lastly, a GUI should appear, with:
 
 * Direct view from Camera node
-* Instance segmentation view based on predictions from Kenning (started using `kenning flow` with [`kenning-instance-segmentation.json`](./kenning-instance-segmentation.json) or [`kenning-instance-segmentation-cpu.json`](./kenning-instance-segmentation-cpu.json) if you don't use GPU )
+* Instance segmentation view based on predictions from Kenning (started using `kenning flow` with [`./kenning-instance-segmentation.yaml`](./examples/kenning-instance-segmentation/kenning-instance-segmentation.yaml) or [`kenning-instance-segmentation-cpu.yaml`](./examples/kenning-instance-segmentation/kenning-instance-segmentation-cpu.yaml) if you don't use GPU )
 * A widget visualizing a list of detected objects, with a possibility to filter out not interesting classes.
