@@ -91,7 +91,7 @@ private:
     }
 
     /// ImGui color definitions
-    std::vector<ImColor> im_colors{
+    const std::vector<ImColor> im_colors{
         ImColor(ImVec4(0.96f, 0.26f, 0.21f, 1.0f)),
         ImColor(ImVec4(0.91f, 0.12f, 0.39f, 1.0f)),
         ImColor(ImVec4(0.61f, 0.15f, 0.69f, 1.0f)),
@@ -113,7 +113,7 @@ private:
         ImColor(ImVec4(0.38f, 0.49f, 0.55f, 1.0f))};
 
     /// OpenCV color definitions
-    std::vector<cv::Scalar> colors = {
+    const std::vector<cv::Scalar> colors = {
         cv::Scalar(54, 67, 244),
         cv::Scalar(99, 30, 233),
         cv::Scalar(176, 39, 156),
