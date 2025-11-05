@@ -20,7 +20,7 @@
       type: kenning.runtimes.onnx.ONNXRuntime
       parameters:
         save_model_path: kenning:///models/instance_segmentation/yolact.onnx
-        execution_providers: [CUDAExecutionProvider CPUExecutionProvider]
+        execution_providers: [CUDAExecutionProvider]
   inputs: 
     input: cam_frame
   outputs: 

@@ -19,7 +19,7 @@
             type: kenning.runtimes.onnx.ONNXRuntime
             parameters:
                 save_model_path: kenning:///models/depth_estimation/dinov2.onnx
-                execution_providers: [CUDAExecutionProvider CPUExecutionProvider]
+                execution_providers: [CUDAExecutionProvider]
     inputs: 
         processed_input: cam_frame
     outputs:
