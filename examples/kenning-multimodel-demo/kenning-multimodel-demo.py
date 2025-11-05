@@ -22,11 +22,18 @@ def generate_launch_description():
     )
 
     use_gui = LaunchConfiguration('use_gui')
+    start_nvidia_mps = LaunchConfiguration('start_nvidia_mps')
 
     use_gui_arg = DeclareLaunchArgument(
         "use_gui",
         default_value="False",
         description="Set to true if you want to use GUI"
+    )
+
+    start_nvidia_mps_arg = DeclareLaunchArgument(
+        "start_nvidia_mps",
+        default_value="False",
+        description="Set to true to start nvidia-cuda-mps-control"
     )
 
     camera_node_container = ComposableNodeContainer(
@@ -96,18 +103,10 @@ def generate_launch_description():
             "CUDA_MPS_PIPE_DIRECTORY": "/tmp/nvidia-mps",
             "CUDA_MPS_LOG_DIRECTORY": "/tmp/mps-logs",
         },
+        output='both',
         on_exit=launch.actions.Shutdown(),
+        condition=IfCondition(start_nvidia_mps)
     )
-
-    envs = []
-
-    # Check if variables are present in the system
-    if ("CUDA_MPS_PIPE_DIRECTORY" in os.environ.keys() and 
-        "CUDA_MPS_LOG_DIRECTORY" in os.environ.keys()):
-        envs.append([
-            SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", "/tmp/nvidia-mps"),
-            SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", "/tmp/mps-logs")
-        ])
 
     return launch.LaunchDescription([
         start_nvidia_mps_arg,
@@ -115,6 +114,7 @@ def generate_launch_description():
         SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", os.getenv("CUDA_MPS_LOG_DIRECTORY","/tmp/mps-logs")),
         nvidia_mps_node,
         use_gui_arg,
+        start_nvidia_mps_arg,
         camera_path,
         camera_node_container,
         gui_node,
