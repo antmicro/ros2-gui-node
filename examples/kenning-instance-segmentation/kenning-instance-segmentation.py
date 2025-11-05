@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 
 import launch
 from launch_ros.actions import ComposableNodeContainer
@@ -75,7 +76,7 @@ def generate_launch_description():
         executable="kenning",
         arguments=["ros","flow","--verbosity","DEBUG"],
         parameters=[{
-            "config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.json"
+            "config_file":"./src/gui_node/examples/kenning-instance-segmentation/kenning-instance-segmentation.yaml"
         }],
         on_exit=launch.actions.Shutdown()
     )
@@ -87,17 +88,16 @@ def generate_launch_description():
             "CUDA_MPS_PIPE_DIRECTORY": "/tmp/nvidia-mps",
             "CUDA_MPS_LOG_DIRECTORY": "/tmp/mps-logs",
         },
+        output='both',
         on_exit=launch.actions.Shutdown(),
         condition=IfCondition(start_nvidia_mps)
     )
 
     return launch.LaunchDescription([
-        SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", "/tmp/nvidia-mps",
-                               condition=IfCondition(start_nvidia_mps)),
-        SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", "/tmp/mps-logs",
-                               condition=IfCondition(start_nvidia_mps)),
-        nvidia_mps_node,
         start_nvidia_mps_arg,
+        SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", os.getenv("CUDA_MPS_PIPE_DIRECTORY","/tmp/nvidia-mps")),
+        SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", os.getenv("CUDA_MPS_LOG_DIRECTORY","/tmp/mps-logs")),
+        nvidia_mps_node,
         use_gui_arg,
         camera_path,
         camera_node_container,
