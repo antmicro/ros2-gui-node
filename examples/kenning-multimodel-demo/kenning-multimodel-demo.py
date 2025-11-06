@@ -84,7 +84,7 @@ def generate_launch_description():
         executable="kenning",
         arguments=["ros","flow","--verbosity","DEBUG"],
         parameters=[{
-            "config_file":"./src/gui_node/examples/kenning-multimodel-demo/kenning-pose-from-detection.yaml"
+            "config_file":"./src/gui_node/examples/kenning-multimodel-demo/kenning-pose-estimation.yaml"
         }]
     )
 
