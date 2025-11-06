@@ -65,32 +65,33 @@ void PoseWidget::imgui_callback()
         {13, 15},
         {12, 14},
         {14, 16}};
-    const ImColor face_c = ImColor(0, 0, 255);
-    const ImColor torso_c = ImColor(255, 255, 0);
-    const ImColor rarm_c = ImColor(255, 0, 0);
-    const ImColor larm_c = ImColor(0, 255, 255);
-    const ImColor rleg_c = ImColor(0, 255, 0);
-    const ImColor lleg_c = ImColor(255, 0, 255);
-    const std::array<ImColor, 19> connect_colors = {
-        face_c,
-        face_c,
-        face_c,
-        face_c,
-        face_c,
-        torso_c,
-        torso_c,
-        torso_c,
-        rarm_c,
-        rarm_c,
-        larm_c,
-        larm_c,
-        torso_c,
-        torso_c,
-        torso_c,
-        rleg_c,
-        rleg_c,
-        lleg_c,
-        lleg_c};
+    const ImColor face_c = ImColor(50, 25, 255);
+    const ImColor rarm_c = ImColor(255, 127, 0);
+    const ImColor larm_c = ImColor(0, 255, 0);
+    const ImColor rleg_c = ImColor(255, 25, 48);
+    const ImColor lleg_c = ImColor(43, 255, 232);
+
+    const size_t gradient_step_count = 10;
+
+    const std::array<ImColor, 17> point_colors = {
+        face_c, // nose
+        face_c, // left eye
+        face_c, // right eye
+        face_c, // left ear
+        face_c, // right ear
+        rarm_c, // right arm
+        larm_c, // left arm
+        rarm_c, // right elbow
+        larm_c, // left elbow
+        rarm_c, // right hand
+        larm_c, // left hand
+        rleg_c, // right hip
+        lleg_c, // left hip
+        rleg_c, // right knee
+        lleg_c, // left knee
+        rleg_c, // right foot
+        lleg_c  // left foot
+    };
 
     for (const auto &pose : this->poses)
     {
@@ -133,7 +134,43 @@ void PoseWidget::imgui_callback()
                 color_idx += 1;
                 continue;
             }
-            draw_list->AddLine(ImVec2(xp1, yp1), ImVec2(xp2, yp2), connect_colors[color_idx++], point_radius);
+
+            auto p1_color = point_colors[idx1].Value;
+            auto p2_color = point_colors[idx2].Value;
+
+            float color_step[3] = {
+                (p2_color.x - p1_color.x) / static_cast<float>(gradient_step_count),
+                (p2_color.y - p1_color.y) / static_cast<float>(gradient_step_count),
+                (p2_color.z - p1_color.z) / static_cast<float>(gradient_step_count),
+            };
+
+            ImColor start_color = p1_color;
+
+            float point_gradient[2] = {
+                (p2.x - p1.x) / static_cast<float>(gradient_step_count),
+                (p2.y - p1.y) / static_cast<float>(gradient_step_count)};
+
+            ImVec2 start_p = p1;
+            ImVec2 end_p = ImVec2(start_p.x + point_gradient[0], start_p.y + point_gradient[1]);
+
+            for (size_t step = 0; step < gradient_step_count; ++step)
+            {
+
+                draw_list->AddLine(start_p, end_p, start_color, point_radius);
+
+                start_color.Value.x += color_step[0];
+                start_color.Value.y += color_step[1];
+                start_color.Value.z += color_step[2];
+
+                start_p.x += point_gradient[0];
+                start_p.y += point_gradient[1];
+
+                end_p.x += point_gradient[0];
+                end_p.y += point_gradient[1];
+            }
+
+            draw_list->AddCircleFilled(p1, point_radius, point_colors[idx1]);
+            draw_list->AddCircleFilled(p2, point_radius, point_colors[idx2]);
         }
 
         // draw text
