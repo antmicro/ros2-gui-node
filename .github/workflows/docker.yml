@@ -27,7 +27,7 @@ jobs:
               with:
                   submodules: 'recursive'
             - name: Build Docker image
-              run: ./examples/kenning-instance-segmentation/build-docker.sh
+              run: ./environments/build-docker.sh
             - name: Login to registry
               if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
               uses: docker/login-action@v2
