@@ -11,10 +11,14 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch.actions import SetEnvironmentVariable
 from launch.actions import ExecuteProcess
+from launch.actions import SetEnvironmentVariable
+
 
 def generate_launch_description():
+    cuda_mps_pipe = os.getenv("CUDA_MPS_PIPE_DIRECTORY", "/tmp/nvidia-mps")
+    cuda_mps_logs = os.getenv("CUDA_MPS_LOG_DIRECTORY", "/tmp/mps-logs")
+
     camera_path = DeclareLaunchArgument(
         "camera_path",
         default_value="/dev/video0",
@@ -22,6 +26,7 @@ def generate_launch_description():
     )
 
     use_gui = LaunchConfiguration('use_gui')
+
     start_nvidia_mps = LaunchConfiguration('start_nvidia_mps')
 
     use_gui_arg = DeclareLaunchArgument(
@@ -100,18 +105,29 @@ def generate_launch_description():
         name="cuda_mps_node",
         cmd=["nvidia-cuda-mps-control", "-f"],
         additional_env={
-            "CUDA_MPS_PIPE_DIRECTORY": "/tmp/nvidia-mps",
-            "CUDA_MPS_LOG_DIRECTORY": "/tmp/mps-logs",
+            "CUDA_MPS_PIPE_DIRECTORY": cuda_mps_pipe,
+            "CUDA_MPS_LOG_DIRECTORY": cuda_mps_logs,
         },
         output='both',
         on_exit=launch.actions.Shutdown(),
         condition=IfCondition(start_nvidia_mps)
     )
 
+    mps_pipe_env = SetEnvironmentVariable(
+        "CUDA_MPS_PIPE_DIRECTORY",
+        cuda_mps_pipe,
+        condition=IfCondition(start_nvidia_mps)
+    )
+    mps_logs_env = SetEnvironmentVariable(
+        "CUDA_MPS_LOG_DIRECTORY",
+        cuda_mps_logs,
+        condition=IfCondition(start_nvidia_mps)
+    )
+
     return launch.LaunchDescription([
         start_nvidia_mps_arg,
-        SetEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY", os.getenv("CUDA_MPS_PIPE_DIRECTORY","/tmp/nvidia-mps")),
-        SetEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY", os.getenv("CUDA_MPS_LOG_DIRECTORY","/tmp/mps-logs")),
+        mps_pipe_env,
+        mps_logs_env,
         nvidia_mps_node,
         use_gui_arg,
         start_nvidia_mps_arg,
