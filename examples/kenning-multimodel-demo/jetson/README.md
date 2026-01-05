@@ -11,12 +11,7 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 * [Camera node](https://github.com/antmicro/ros2-camera-node) - reads data from a camera and exposes its settings
 * [GUI node](https://github.com/antmicro/ros2-gui-node) - renders a window with camera view and outputs from Kenning nodes.
 
-> **NOTE**
->
-> For instruction on how to run demo on **Nvidia Jetson platform**
-> look into [jetson/README.md](./jetson/README.md) folder.
-
-# Running on x86 based systems
+# Running on Nvidia Jetson 
 
 ## Setting up an environment
 
@@ -28,22 +23,35 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 > * A CUDA-enabled NVIDIA GPU for inference acceleration
 > * A [git](https://git-scm.com/) version control system
 > * [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) to clone all necessary repositories
-> * [Docker](https://www.docker.com/) to use a prepared ROS 2 environment
-> * [nvidia-container-toolkit](https://github.com/nvidia/nvidia-container-toolkit) to provide access to the GPU in the Docker container
+> * NVIDIA Container Toolkit
+> * NVIDIA Jetson JetPack
+> * Docker
+>
+> For instructions on how to install them look into: 
+> * https://docs.nvidia.com/jetson/jetpack/install-setup/index.html
+> * https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
 
-Ready to use ROS 2 environment can be found in `ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo` Docker image (defined in [project's Dockerfile](../../environments/Dockerfile)).
-
-Built image can be downloaded like so:
-
+First make sure you have installed **jetson-containers** https://github.com/dusty-nv/jetson-containers.
+To install it type into terminal:
+``` bash
+git clone https://github.com/dusty-nv/jetson-containers
+bash jetson-containers/install.sh
 ```
-docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
-```
 
-The image can be built from scratch by running a following command in the [environments](../../environments/) directory:
-
-```
+Then go to **ros2-gui-node** repository and go to the folder [environments/jetson](../../environments/jetson) and
+execute:
+``` bash
 sudo ./build-docker.sh
 ```
+> **NOTE**  
+> 
+> Due to bug: https://github.com/dusty-nv/jetson-containers/issues/1577, in jetson-containers you may encounter a build error halfway through, something like:
+>```
+>  Error: Command 'docker run ...
+>
+>  ...Failed building: cuda
+>```
+>but it is expected behaviour.
 
 ## Downloading the demo
 
@@ -69,7 +77,8 @@ repo sync -j`nproc`
 > git config --global user.email "you@example.com"
 > git config --global user.name "Your Name"
 > ```
-> It can be dummy credential, it doesn't have to be real user credential.
+
+It can be dummy credential, it doesn't have to be real user credential.
 
 ## Starting the Docker environment
 
@@ -82,20 +91,12 @@ xhost +local:
 After this, run a Docker container under the `kenning-ros2-demo` directory with:
 
 ``` bash
-sudo ./src/gui_node/environments/run-docker.sh
+sudo ./src/gui_node/environments/jetson/run-docker.sh
 ```
 
 > **NOTE** 
 >
-> In case you have built the image manually, e.g. with name `kenning-ros2-demo`, run `DOCKER_IMAGE=kenning-ros2-demo ./run-docker.sh`.
-> Also, if you want to change the camera path (default `/dev/video0`), set the `CAMERA_PATH` variable with your desired path before running the script.
-
-Scripts checks for the presence of NVIDIA drivers - if NVIDIA GPU is not present, the container will run in CPU-only mode.
-If you want to explicitly run the container without GPU acceleration, run:
-
-``` bash
-sudo ../run-docker.sh cpu
-```
+> If you want to change the camera path (default `/dev/video0`), set the `CAMERA_PATH` variable with your desired path before running the script.
 
 This script starts the container with:
 
@@ -103,40 +104,39 @@ This script starts the container with:
 * `-v $(pwd):/data` - mounts current (`kenning-ros2-demo`) directory in the `/data` directory in the container's context
 * `-v /tmp/.X11-unix/:/tmp/.X11-unix/` - passes the X11 socket directory to the container's context (to allow running GUI application)
 * `-e DISPLAY=$DISPLAY`, `-e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR` - adds X11-related environment variables
-* `--gpus='all,"capabilities=compute,utility,graphics,display"'` - adds GPUs to the container's context for computing and displaying purposes
-
-Then, in the Docker container, you need to install graphics libraries for NVIDIA that match your host's drivers.
-To check NVIDIA drivers version, run:
-
-```
-nvidia-smi
-```
-
-And check the `Driver version`.
-
-For example, for 530.41.03, install the following libraries in the container:
-
-```
-apt-get update && apt-get install libnvidia-gl-530
-```
+* `--runtime nvidia` - adds GPUs to the container's context for computing and displaying purposes
 
 Then, go to the workspace directory in the container:
 
 ```
 cd /data
 ```
-## Install Kenning
+## Install Kenning and ONNXRUNTIME
 
-Install **Kenning** with necessary dependencies:
+Before starting the demo we need to install **Kenning**, start by creating virtual
+environment:
+
+```bash
+python -m venv --system-site-packages .venv
+source .venv/bin/activate
+```
+
+Then install **Kenning** with necessary dependencies:
 
 You may update pip before processing, to avoid installation errors:
 
 ``` bash
-pip install --upgrade pip
+pip install "./kenning[object_detection,pose_estimation]"
 ```
 
+then install compatible **onnxruntime-gpu** that you can get with:
+
 ``` bash
-pip install "./kenning[object_detection,pose_estimation,onnxruntime,onnxruntime_gpu]"
+wget https://dl.antmicro.com/kenning/packages/onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
+```
+then install it:
+``` bash
+pip install ./onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
 ```
 
 ## Building GUI node and Camera node
