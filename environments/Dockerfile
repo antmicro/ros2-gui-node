@@ -69,6 +69,9 @@ RUN apt-get update && apt-get upgrade -y && $INST \
     python3-setuptools \
     python3-vcstool \
     python3-venv \
+    python3-empy \
+    python3-catkin-pkg \
+    python3-lark \
     rapidjson-dev \
     ros-dev-tools \
     spirv-tools \

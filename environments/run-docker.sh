@@ -44,4 +44,4 @@ docker run -it \
     -e DISPLAY=$DISPLAY \
     -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
     $DOCKER_IMAGE \
-    /bin/bash
+    /bin/bash -c "$2"
