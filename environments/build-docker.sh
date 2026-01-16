@@ -10,6 +10,7 @@ DOCKER_TAG=${DOCKER_TAG:-ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo}
 
 BASE_IMAGE="nvidia/cuda:12.9.1-cudnn-devel-ubuntu24.04"
 BUILD_TVM="y"
+ADDITIONAL_PACKAGES=""
 
 SCRIPTDIR=$(dirname "$(realpath "$0")")
 
@@ -31,6 +32,8 @@ then
     git clone --recursive https://github.com/ros-perception/vision_opencv --branch humble third-party/vision_opencv
 fi
 
-docker build . --tag "${DOCKER_TAG}" --build-arg BASE_IMAGE="$BASE_IMAGE" --build-arg BUILD_TVM="$BUILD_TVM"
+docker build . --tag "${DOCKER_TAG}" --build-arg BASE_IMAGE="$BASE_IMAGE" \
+        --build-arg BUILD_TVM="$BUILD_TVM" \
+        --build-arg ADDITIONAL_PACKAGES="$ADDITIONAL_PACKAGES"
 
 popd || exit
