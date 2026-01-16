@@ -58,6 +58,15 @@ repo sync -j`nproc`
 mkdir build
 ```
 
+> **NOTE** 
+>
+> Before executing repo command you may need to set up git credential by typing into terminal:
+>
+> ``` bash
+> git config --global user.email "you@example.com"
+> git config --global user.name "Your Name"
+> ```
+
 It downloads the following repositories:
 
 * [Kenning](https://github.com/antmicro/kenning) for model optimization and runtime, in the `kenning` directory.
@@ -83,11 +92,12 @@ Then, run a Docker container under the `kenning-ros2-demo` directory with:
 Also, if you want to change the camera path, set the `CAMERA_PATH` variable with your desired path before running the script.
 
 Scripts checks for the presence of NVIDIA drivers - if NVIDIA GPU is not present, the container will run in CPU-only mode.
-If you want to explicitly run the container without GPU acceleration, run:
+If you want to explicitly run the container without GPU acceleration, set:
 
 ```
-../run-docker.sh cpu
+export USE_PLATFORM=cpu
 ```
+before running the script.
 
 This script starts the image with:
 
