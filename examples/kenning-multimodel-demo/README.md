@@ -18,6 +18,34 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 
 # Running on x86 based systems
 
+## Quickstart
+
+You can pull demo image using:
+
+``` bash
+docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
+```
+
+Then create directory for demo
+
+```bash
+mkdir kenning-ros2-demo && cd kenning-ros2-demo
+```
+
+and prepare repositories:
+
+```bash
+repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-multimodel-demo/manifest.xml
+
+repo sync -j`nproc`
+```
+
+Then you can execute demo by simply running:
+
+``` bash
+src/gui_node/examples/kenning-multimodel-demo/run-demo.sh
+```
+
 ## Setting up an environment
 
 > **NOTE**
@@ -162,6 +190,12 @@ source install/setup.sh
 ```
 
 Next, launch Kenning, Camera node, and GUI node using the launch file [`kenning-multimodel-demo.py use_gui:=True`](./kenning-multimodel-demo.py):
+
+> **NOTE** 
+>
+> If you want to run demo using local model's backups set `MODEL_PATH`
+> environment variable with directory containing models ONNX file with
+> thier respected configs
 
 ```
 ros2 launch gui_node kenning-multimodel-demo.py use_gui:=True

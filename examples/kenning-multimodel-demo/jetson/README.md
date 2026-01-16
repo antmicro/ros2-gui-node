@@ -31,27 +31,11 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 > * https://docs.nvidia.com/jetson/jetpack/install-setup/index.html
 > * https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
 
-First make sure you have installed **jetson-containers** https://github.com/dusty-nv/jetson-containers.
-To install it type into terminal:
-``` bash
-git clone https://github.com/dusty-nv/jetson-containers
-bash jetson-containers/install.sh
-```
-
-Then go to **ros2-gui-node** repository and go to the folder [environments/jetson](../../environments/jetson) and
+Then go to **ros2-gui-node** repository and go to the folder [environments](../../environments) and
 execute:
 ``` bash
-sudo ./build-docker.sh
+sudo ./build-docker.sh jetson
 ```
-> **NOTE**  
-> 
-> Due to bug: https://github.com/dusty-nv/jetson-containers/issues/1577, in jetson-containers you may encounter a build error halfway through, something like:
->```
->  Error: Command 'docker run ...
->
->  ...Failed building: cuda
->```
->but it is expected behaviour.
 
 ## Downloading the demo
 
@@ -91,7 +75,9 @@ xhost +local:
 After this, run a Docker container under the `kenning-ros2-demo` directory with:
 
 ``` bash
-sudo ./src/gui_node/environments/jetson/run-docker.sh
+export USE_PLATFORM=jetson
+
+sudo ./src/gui_node/environments/run-docker.sh
 ```
 
 > **NOTE** 
