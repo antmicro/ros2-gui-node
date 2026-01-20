@@ -13,8 +13,6 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 
 # Running on Nvidia Jetson 
 
-## Setting up an environment
-
 > **NOTE**
 >
 > This demo requires:
@@ -31,7 +29,43 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 > * https://docs.nvidia.com/jetson/jetpack/install-setup/index.html
 > * https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
 
-Then go to **ros2-gui-node** repository and go to the folder [environments](../../environments) and
+## Quickstart
+
+You can pull demo image using:
+
+``` bash
+docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
+```
+
+or built it using a dedicated script you can get from [ros2-gui-node/environments](https://github.com/antmicro/ros2-gui-node/tree/main/environments) 
+repository:
+``` bash
+./build-docker.sh jetson
+```
+
+Then you can download and initialize the demo with `init-demo.sh` 
+script from [ros2-gui-node/examples/kenning-multimodel-demo](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general) 
+
+``` bash
+./init-demo.sh jetson
+```
+
+script should perform every steps mentioned below, it download demo resources into `kenning-ros2-demo` folder then it runs docker
+container, compile demo source code.
+
+Then you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
+
+```bash
+./run-demo.sh
+```
+
+After a while you should see a window with all the AI models 
+open and running.
+
+
+## Setting up an environment
+
+Then go to **ros2-gui-node** repository and go to the folder [environments](../../../environments) and
 execute:
 ``` bash
 sudo ./build-docker.sh jetson
@@ -97,6 +131,18 @@ Then, go to the workspace directory in the container:
 ```
 cd /data
 ```
+
+## Download resources
+
+Kenning automatically downloads all needed resources but if you wish to prefetch models,
+you can use `download-resources` command in `kenning`:
+
+``` bash
+    python -m kenning download-resources --cfg ./src/gui_node/examples/kenning-multimodel-demo/*.yml
+```
+
+The script will download all necessary resources used by the demo.
+
 ## Install Kenning and ONNXRUNTIME
 
 Before starting the demo we need to install **Kenning**, start by creating virtual
@@ -115,8 +161,7 @@ You may update pip before processing, to avoid installation errors:
 pip install "./kenning[object_detection,pose_estimation]"
 ```
 
-then install compatible **onnxruntime-gpu** that you can get with:
-
+then install compatible **onnxruntime-gpu**, first you need to downloads it:
 ``` bash
 wget https://dl.antmicro.com/kenning/packages/onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
 ```
@@ -127,7 +172,7 @@ pip install ./onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
 
 ## Building GUI node and Camera node
 
-First of all, load the `setup.sh` script for ROS 2 tools in Docker container, e.g.:
+First of all, source the `setup.sh` script for ROS 2 tools in Docker container, e.g.:
 
 ```bash
 source /opt/ros/setup.sh
@@ -168,3 +213,13 @@ Lastly, a GUI should appear, with the:
 * A widget visualizing a list of detected objects, with a possibility to filter out not interesting classes.
 * A widget showing estimated poses for all persons detected on the image.
 * A widget for showing depth estimation results.
+
+## Start the demo upon system startup
+
+In directory [tools/ubuntu](../tools/ubuntu) you can use `install.sh` script to
+setup `systemd` service that allows to execute demo upon system boot, all you need 
+to is to type:
+
+``` bash
+./install.sh
+```

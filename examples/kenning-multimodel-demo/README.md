@@ -18,36 +18,6 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 
 # Running on x86 based systems
 
-## Quickstart
-
-You can pull demo image using:
-
-``` bash
-docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
-```
-
-Then create directory for demo
-
-```bash
-mkdir kenning-ros2-demo && cd kenning-ros2-demo
-```
-
-and prepare repositories:
-
-```bash
-repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-multimodel-demo/manifest.xml
-
-repo sync -j`nproc`
-```
-
-Then you can execute demo by simply running:
-
-``` bash
-src/gui_node/examples/kenning-multimodel-demo/run-demo.sh
-```
-
-## Setting up an environment
-
 > **NOTE**
 >
 > This demo requires:
@@ -58,6 +28,41 @@ src/gui_node/examples/kenning-multimodel-demo/run-demo.sh
 > * [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) to clone all necessary repositories
 > * [Docker](https://www.docker.com/) to use a prepared ROS 2 environment
 > * [nvidia-container-toolkit](https://github.com/nvidia/nvidia-container-toolkit) to provide access to the GPU in the Docker container
+
+## Quickstart
+
+You can pull demo image using:
+
+``` bash
+docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
+```
+
+or built it using a dedicated script you can get from [ros2-gui-node/environments](https://github.com/antmicro/ros2-gui-node/tree/main/environments) 
+repository:
+``` bash
+./build-docker.sh
+```
+
+Then you can download and initialize the demo with `init-demo.sh` 
+script from [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general) 
+
+``` bash
+./init-demo.sh
+```
+
+script should perform every steps mentioned below, it download demo resources into `kenning-ros2-demo` folder then it runs docker
+container, compile demo source code.
+
+Then you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
+
+```bash
+./run-demo.sh
+```
+
+After a while you should see a window with all the AI models 
+open and running.
+
+## Setting up an environment
 
 Ready to use ROS 2 environment can be found in `ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo` Docker image (defined in [project's Dockerfile](../../environments/Dockerfile)).
 
@@ -119,11 +124,12 @@ sudo ./src/gui_node/environments/run-docker.sh
 > Also, if you want to change the camera path (default `/dev/video0`), set the `CAMERA_PATH` variable with your desired path before running the script.
 
 Scripts checks for the presence of NVIDIA drivers - if NVIDIA GPU is not present, the container will run in CPU-only mode.
-If you want to explicitly run the container without GPU acceleration, run:
+If you want to explicitly run the container without GPU acceleration, set:
 
-``` bash
-sudo ../run-docker.sh cpu
 ```
+export USE_PLATFORM=cpu
+```
+before running the script.
 
 This script starts the container with:
 
@@ -153,6 +159,16 @@ Then, go to the workspace directory in the container:
 ```
 cd /data
 ```
+
+## Download resources
+
+Kenning automatically downloads all needed resources but if you wish to prefetch models,
+you can use `download-resources` command in `kenning`:
+
+``` bash
+    python -m kenning download-resources --cfg ./src/gui_node/examples/kenning-multimodel-demo/*.yml
+```
+
 ## Install Kenning
 
 Install **Kenning** with necessary dependencies:
@@ -169,7 +185,7 @@ pip install "./kenning[object_detection,pose_estimation,onnxruntime,onnxruntime_
 
 ## Building GUI node and Camera node
 
-First of all, load the `setup.sh` script for ROS 2 tools in Docker container, e.g.:
+First of all, source the `setup.sh` script for ROS 2 tools in Docker container, e.g.:
 
 ```bash
 source /opt/ros/setup.sh
@@ -191,12 +207,6 @@ source install/setup.sh
 
 Next, launch Kenning, Camera node, and GUI node using the launch file [`kenning-multimodel-demo.py use_gui:=True`](./kenning-multimodel-demo.py):
 
-> **NOTE** 
->
-> If you want to run demo using local model's backups set `MODEL_PATH`
-> environment variable with directory containing models ONNX file with
-> thier respected configs
-
 ```
 ros2 launch gui_node kenning-multimodel-demo.py use_gui:=True
 ```
@@ -216,3 +226,13 @@ Lastly, a GUI should appear, with the:
 * A widget visualizing a list of detected objects, with a possibility to filter out not interesting classes.
 * A widget showing estimated poses for all persons detected on the image.
 * A widget for showing depth estimation results.
+
+## Start the demo upon system startup
+
+In directory [tools/ubuntu](./tools/ubuntu) you can use `install.sh` script to
+setup `systemd` service that allows to execute demo upon system boot, all you need 
+to is to type:
+
+``` bash
+./install.sh
+```
