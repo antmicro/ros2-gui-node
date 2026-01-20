@@ -1,0 +1,18 @@
+[Unit]
+Description=Kenning Multimodel demo
+After=display-manager.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+Restart=always
+RestartSec=1
+User=$USER
+Environment=DISPLAY=$DISPLAY
+Environment=KENNING_MULTIMODEL_DEMO_PATH=$KENNING_MULTIMODEL_DEMO_PATH
+Environment=USE_PLATFORM=$USE_PLATFORM
+Environment=USE_NON_INTERACTIVE="y"
+ExecStart=$DEMO_PATH
+
+[Install]
+WantedBy=graphical.target
