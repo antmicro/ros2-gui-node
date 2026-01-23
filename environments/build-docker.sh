@@ -21,7 +21,7 @@ if [[ $1 = "jetson" ]]; then
     BASE_IMAGE="$(autotag cudastack:standard)"
     BUILD_TVM=""
     ADDITIONAL_PACKAGES="kmod \
-    vulkan-validationlayers" 
+    vulkan-validationlayers"
 fi
 
 mkdir -p third-party/

@@ -17,7 +17,7 @@ INTERACTIVE_MODE="-it"
 
 if ! command -v nvidia-smi >/dev/null 2>&1
 then
-    echo "Nvidia GPU not found, using CPU"
+    echo "NVIDIA GPU not found, using CPU"
     USE_PLATFORM="cpu"
 fi
 
@@ -25,7 +25,7 @@ if [[ $USE_PLATFORM = "cpu" ]]; then
     echo "Selected to run example on cpu"
     GPU_PARAMS=""
 elif [[ $USE_PLATFORM = "jetson" ]]; then
-    echo "Selected Nvidia Jetson platform"
+    echo "Selected NVIDIA Jetson platform"
     GPU_PARAMS="--runtime nvidia"
 fi
 

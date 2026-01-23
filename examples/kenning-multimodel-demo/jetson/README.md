@@ -11,21 +11,21 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 * [Camera node](https://github.com/antmicro/ros2-camera-node) - reads data from a camera and exposes its settings
 * [GUI node](https://github.com/antmicro/ros2-gui-node) - renders a window with camera view and outputs from Kenning nodes.
 
-# Running on Nvidia Jetson 
+# Running on NVIDIA Jetson
 
 > **NOTE**
 >
 > This demo requires:
-> 
+>
 > * A camera
 > * A CUDA-enabled NVIDIA GPU for inference acceleration
 > * A [git](https://git-scm.com/) version control system
 > * [repo tool](https://gerrit.googlesource.com/git-repo/+/refs/heads/main/README.md) to clone all necessary repositories
-> * NVIDIA Container Toolkit
+> * [Docker](https://www.docker.com/) to use a prepared ROS 2 environment
+> * [nvidia-container-toolkit](https://github.com/nvidia/nvidia-container-toolkit) to provide access to the GPU in the Docker container
 > * NVIDIA Jetson JetPack
-> * Docker
 >
-> For instructions on how to install them look into: 
+> For instructions on how to install them look into:
 > * https://docs.nvidia.com/jetson/jetpack/install-setup/index.html
 > * https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
 
@@ -37,36 +37,32 @@ You can pull demo image using:
 docker pull ghcr.io/antmicro/ros2-gui-node:kenning-ros2-demo
 ```
 
-or built it using a dedicated script you can get from [ros2-gui-node/environments](https://github.com/antmicro/ros2-gui-node/tree/main/environments) 
-repository:
+or build it using a dedicated script you can get from [ros2-gui-node/environments](https://github.com/antmicro/ros2-gui-node/tree/main/environments) repository:
 ``` bash
 ./build-docker.sh jetson
 ```
 
-Then you can download and initialize the demo with `init-demo.sh` 
-script from [ros2-gui-node/examples/kenning-multimodel-demo](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general) 
+Then, you can download and initialize the demo with `init-demo.sh` script from [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
 
 ``` bash
 ./init-demo.sh jetson
 ```
 
-script should perform every steps mentioned below, it download demo resources into `kenning-ros2-demo` folder then it runs docker
-container, compile demo source code.
+This script downloads demo resources into `kenning-ros2-demo` directory, runs Docker container and compiles demo source code.
 
-Then you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
+In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
 
 ```bash
 ./run-demo.sh
 ```
 
-After a while you should see a window with all the AI models 
-open and running.
-
+After a while you should see a window with all the AI models open and running.
 
 ## Setting up an environment
 
-Then go to **ros2-gui-node** repository and go to the folder [environments](../../../environments) and
-execute:
+To set up an environment, go to **ros2-gui-node** repository and go to the folder [environments](../../../environments).
+In there, execute:
+
 ``` bash
 sudo ./build-docker.sh jetson
 ```
@@ -87,16 +83,14 @@ repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-multi
 repo sync -j`nproc`
 ```
 
-> **NOTE** 
+> **NOTE**
 >
-> Before executing repo command you may need to set up git credential by typing into terminal:
+> Before executing repo command you may need to set up git credentials by typing into terminal:
 >
 > ``` bash
 > git config --global user.email "you@example.com"
 > git config --global user.name "Your Name"
 > ```
-
-It can be dummy credential, it doesn't have to be real user credential.
 
 ## Starting the Docker environment
 
@@ -114,7 +108,7 @@ export USE_PLATFORM=jetson
 sudo ./src/gui_node/environments/run-docker.sh
 ```
 
-> **NOTE** 
+> **NOTE**
 >
 > If you want to change the camera path (default `/dev/video0`), set the `CAMERA_PATH` variable with your desired path before running the script.
 
@@ -216,9 +210,7 @@ Lastly, a GUI should appear, with the:
 
 ## Start the demo upon system startup
 
-In directory [tools/ubuntu](../tools/ubuntu) you can use `install.sh` script to
-setup `systemd` service that allows to execute demo upon system boot, all you need 
-to is to type:
+In directory [tools/ubuntu](./tools/ubuntu) you can use `install.sh` script to setup `systemd` service that allows to execute demo upon system boot, all you need to is to type:
 
 ``` bash
 ./install.sh

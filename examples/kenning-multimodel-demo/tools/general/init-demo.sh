@@ -41,7 +41,7 @@ function inside_docker() {
     pip install "./kenning[object_detection,pose_estimation]"
 
     if [[ $USE_PLATFORM = "jetson" ]]; then
-         # Download onnxruntime_gpu for Jetson 
+         # Download onnxruntime_gpu for Jetson
         wget -N https://dl.antmicro.com/kenning/packages/onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
         # Install onnx runtime
         pip install ./onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl

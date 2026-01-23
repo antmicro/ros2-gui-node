@@ -2,7 +2,7 @@ model_wrapper:
     type: kenning.modelwrappers.instance_segmentation.yolact.YOLACT
     parameters:
         model_path: kenning:///models/instance_segmentation/yolact.onnx
-        
+
 optimizers:
 -   type: kenning.optimizers.tvm.TVMCompiler
     parameters:

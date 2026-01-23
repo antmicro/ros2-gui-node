@@ -1,10 +1,10 @@
 - type: kenning.dataproviders.ros2_camera_node_data_provider.ROS2CameraNodeDataProvider
-  parameters: 
+  parameters:
     topic_name: camera_frame
     output_memory_layout: NCHW
     output_width: 640
     output_height: 640
-  outputs: 
+  outputs:
     frame: cam_frame
     frame_original: cam_frame_original
 

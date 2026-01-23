@@ -1,36 +1,36 @@
 -   type: kenning.dataproviders.ros2_camera_node_data_provider.ROS2CameraNodeDataProvider
-    parameters: 
+    parameters:
         topic_name: camera_frame
         output_memory_layout: NCHW
         output_width: 224
         output_height: 224
-    outputs: 
+    outputs:
         frame: cam_frame
         frame_original: cam_frame_original
 
 -   type: kenning.runners.modelruntime_runner.ModelRuntimeRunner
-    parameters: 
-        model_wrapper: 
+    parameters:
+        model_wrapper:
             type: kenning.modelwrappers.depth_estimation.dinov2ONNX.Dinov2ONNX
-            parameters: 
+            parameters:
                 model_path: kenning:///models/depth_estimation/dinov2.onnx
                 input_height: 224
                 input_width: 224
-        runtime: 
+        runtime:
             type: kenning.runtimes.onnx.ONNXRuntime
             parameters:
                 save_model_path: kenning:///models/depth_estimation/dinov2.onnx
                 execution_providers: [CUDAExecutionProvider]
-    inputs: 
+    inputs:
         processed_input: cam_frame
     outputs:
         output: depth_est
-        
+
 -   type: kenning.outputcollectors.ros2_dinov2_outputcollector.ROS2DinoV2OutputCollector
-    parameters: 
+    parameters:
         topic_name: depth_estimation_kenning
         input_color_format: BGR
         input_memory_layout: NCHW
-    inputs: 
+    inputs:
         frame_original: cam_frame_original
         depth_data: depth_est

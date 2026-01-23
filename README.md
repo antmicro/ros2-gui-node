@@ -1,6 +1,6 @@
 # ROS 2 GuiNode
 
-Copyright (c) 2022-2025 [Antmicro](https://www.antmicro.com)
+Copyright (c) 2022-2026 [Antmicro](https://www.antmicro.com)
 
 `GuiNode` is a library for visualizing data from ROS 2 topics and services.
 It provides tools for manipulating Widgets and data objects, which can be used for data visualization.
