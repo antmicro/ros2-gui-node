@@ -24,17 +24,21 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 > * [Docker](https://www.docker.com/) to use a prepared ROS 2 environment
 > * [nvidia-container-toolkit](https://github.com/nvidia/nvidia-container-toolkit) to provide access to the GPU in the Docker container
 > * NVIDIA Jetson JetPack
-> * [Nvidia Jetson Containers](https://github.com/dusty-nv/jetson-containers) a tools used to install jetson compatibile containers
+> * [NVIDIA Jetson Containers](https://github.com/dusty-nv/jetson-containers) a tools used to install jetson compatibile containers
 >
 > For instructions on how to install them look into:
 > * https://docs.nvidia.com/jetson/jetpack/install-setup/index.html
 > * https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
 > 
-> Due to bug in **Nvidia Jetson Containers**, before installing jetson containers you need to type, inside
-> jetson containers directory:
->
-> git checkout 12cb7a2e
 > 
+> It is recommended to install `NVIDIA Jetson Containers` using specific commands:
+>
+> ``` bash
+> git clone https://github.com/dusty-nv/jetson-containers.git
+> cd jetson-containers
+> git checkout 12cb7a2e
+> ./install.sh
+> ```
 
 ## Quickstart
 
@@ -57,7 +61,7 @@ Then, you can download and initialize the demo with `init-demo.sh` script from [
 
 This script downloads demo resources into `kenning-ros2-demo` directory, runs Docker container and compiles demo source code.
 
-In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general), executed from `kenning-ros2-demo` directory:
+In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general), make sure that you are in `kenning-ros2-demo` directory, beforehand:
 
 ```bash
 export USE_PLATFORM=jetson
@@ -148,8 +152,7 @@ The script will download all necessary resources used by the demo.
 
 ## Install Kenning and ONNXRUNTIME
 
-Before starting the demo we need to install **Kenning**, start by creating virtual
-environment:
+Before starting the demo we need to install **Kenning**, start by creating virtual environment:
 
 ```bash
 python -m venv --system-site-packages .venv
@@ -222,5 +225,11 @@ Lastly, a GUI should appear, with the:
 In directory [tools/ubuntu](./tools/ubuntu) you can use `install.sh` script to setup `systemd` service that allows to execute demo upon system boot, all you need to is to type:
 
 ``` bash
-./install.sh
+./install.sh jetson
+```
+
+Script should find a `kenning-ros2-demo` directory automatically on your computer but you can also specify demo path directory with:
+
+``` bash
+export KENNING_MULTIMODEL_DEMO_PATH=<path to the demo>
 ```

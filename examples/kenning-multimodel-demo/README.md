@@ -50,7 +50,7 @@ Then, you can download and initialize the demo with `init-demo.sh` script from [
 
 This script downloads demo resources into `kenning-ros2-demo` directory, runs Docker container and compiles demo source code.
 
-In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
+In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general), make sure that you are in `kenning-ros2-demo` directory, beforehand:
 
 ```bash
 ./run-demo.sh
@@ -85,7 +85,7 @@ mkdir kenning-ros2-demo && cd kenning-ros2-demo
 Then, download all dependencies using the `repo` tool:
 
 ```bash
-repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-multimodel-demo/manifest.xml
+repo init -u git@github.com:antmicro/ros2-gui-node.git -b main -m examples/kenning-multimodel-demo/manifest.xml
 
 repo sync -j`nproc`
 ```
@@ -157,8 +157,7 @@ cd /data
 
 ## Download resources
 
-Kenning automatically downloads all needed resources but if you wish to prefetch models,
-you can use `download-resources` command in `kenning`:
+Kenning automatically downloads all needed resources but if you wish to prefetch models, you can use `download-resources` command in `kenning`:
 
 ``` bash
     python -m kenning download-resources --cfg ./src/gui_node/examples/kenning-multimodel-demo/*.yml
@@ -224,10 +223,14 @@ Lastly, a GUI should appear, with the:
 
 ## Start the demo upon system startup
 
-In directory [tools/ubuntu](./tools/ubuntu) you can use `install.sh` script to
-setup `systemd` service that allows to execute demo upon system boot, all you need 
-to is to type:
+In directory [tools/ubuntu](./tools/ubuntu) you can use `install.sh` script to setup `systemd` service that allows to execute demo upon system boot, all you need to is to type:
 
 ``` bash
 ./install.sh
+```
+
+Script should find a `kenning-ros2-demo` directory automatically on your computer but you can also specify demo path directory with:
+
+``` bash
+export KENNING_MULTIMODEL_DEMO_PATH=<path to the demo>
 ```
