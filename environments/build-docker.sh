@@ -16,6 +16,7 @@ SCRIPTDIR=$(dirname "$(realpath "$0")")
 
 pushd "${SCRIPTDIR}" || exit
 if [[ $1 = "jetson" ]]; then
+    export DOCKER_BUILDKIT=1
     jetson-containers build cudastack:standard
 
     BASE_IMAGE="$(autotag cudastack:standard)"
