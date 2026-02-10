@@ -24,10 +24,17 @@ In addition to above Kenning-based ROS 2 nodes, the application also runs:
 > * [Docker](https://www.docker.com/) to use a prepared ROS 2 environment
 > * [nvidia-container-toolkit](https://github.com/nvidia/nvidia-container-toolkit) to provide access to the GPU in the Docker container
 > * NVIDIA Jetson JetPack
+> * [Nvidia Jetson Containers](https://github.com/dusty-nv/jetson-containers) a tools used to install jetson compatibile containers
 >
 > For instructions on how to install them look into:
 > * https://docs.nvidia.com/jetson/jetpack/install-setup/index.html
 > * https://docs.nvidia.com/jetson/agx-thor-devkit/user-guide/latest/setup_docker.html
+> 
+> Due to bug in **Nvidia Jetson Containers**, before installing jetson containers you need to type, inside
+> jetson containers directory:
+>
+> git checkout 12cb7a2e
+> 
 
 ## Quickstart
 
@@ -50,9 +57,11 @@ Then, you can download and initialize the demo with `init-demo.sh` script from [
 
 This script downloads demo resources into `kenning-ros2-demo` directory, runs Docker container and compiles demo source code.
 
-In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general):
+In the end, you can execute demo using a file [ros2-gui-node/examples/kenning-multimodel-demo/tools/general](https://github.com/antmicro/ros2-gui-node/tree/main/examples/kenning-multimodel-demo/tools/general), executed from `kenning-ros2-demo` directory:
 
 ```bash
+export USE_PLATFORM=jetson
+
 ./run-demo.sh
 ```
 
@@ -78,7 +87,7 @@ mkdir kenning-ros2-demo && cd kenning-ros2-demo
 Then, download all dependencies using the `repo` tool:
 
 ```bash
-repo init -u git@github.com:antmicro/ros2-gui-node.git -m examples/kenning-multimodel-demo/manifest.xml
+repo init -u git@github.com:antmicro/ros2-gui-node.git -b main -m examples/kenning-multimodel-demo/manifest.xml
 
 repo sync -j`nproc`
 ```
