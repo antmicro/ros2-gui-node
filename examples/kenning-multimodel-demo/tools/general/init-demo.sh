@@ -15,7 +15,7 @@ function outside_docker() {
     pushd kenning-ros2-demo
 
     # Prepare repositories
-    repo init -u https://github.com/antmicro/ros2-gui-node.git -m examples/kenning-multimodel-demo/manifest.xml
+    repo init -u https://github.com/antmicro/ros2-gui-node.git -b main -m examples/kenning-multimodel-demo/manifest.xml
 
     repo sync -j`nproc`
 
