@@ -8,13 +8,23 @@
 
 set -ex
 
-# Generate service file from template using environmental variables substitutions
+if [[ -z $KENNING_MULTIMODEL_DEMO_PATH ]]; then
+    echo "Demo path not specified, searching a path."
 
-INSTALL_SCRIPT_PATH=$(realpath $0)
+    for path in $(find / -name kenning-ros2-demo 2>/dev/null); do
+        check_path="$path/src/gui_node/examples/kenning-multimodel-demo/tools/general/run-demo.sh"
 
-INSTALL_SCRIPT_DIR=$(dirname -- "$INSTALL_SCRIPT_PATH")
+        if [[ -n $(ls $check_path 2>/dev/null) ]]; then
+            KENNING_MULTIMODEL_DEMO_PATH=$path
+            break
+        fi
+    done
 
-KENNING_MULTIMODEL_DEMO_PATH=${KENNING_MULTIMODEL_DEMO_PATH:-${INSTALL_SCRIPT_DIR%/*/*/*/*/*/*}}
+    if [[ -z $KENNING_MULTIMODEL_DEMO_PATH ]]; then
+        echo "No demo is installed on the system"
+        exit
+    fi
+fi
 
 RUN_DEMO_SCRIPT_DIR=${INSTALL_SCRIPT_DIR%/*/*}/tools/general
 
