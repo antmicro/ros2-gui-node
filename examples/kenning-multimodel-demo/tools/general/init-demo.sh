@@ -37,15 +37,17 @@ function inside_docker() {
     python -m venv --system-site-packages .venv
     source .venv/bin/activate
 
-    # Install kenning with necessary requirments
-    pip install "./kenning[object_detection,pose_estimation]"
-
     if [[ $USE_PLATFORM = "jetson" ]]; then
-         # Download onnxruntime_gpu for Jetson
+        # Install kenning with necessary requirments
+        pip install "./kenning[object_detection,pose_estimation]"
+        # Download onnxruntime_gpu for Jetson
         wget -N https://dl.antmicro.com/kenning/packages/onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
         # Install onnx runtime
         pip install ./onnxruntime_gpu-1.23.0-cp312-cp312-linux_aarch64.whl
-    fi
+    else 
+        # Install kenning with necessary requirments
+        pip install "./kenning[object_detection,pose_estimation,onnxruntime_gpu]"
+    if
 
     # Prefetch required resources
     python -m kenning download-resources --cfg /data/src/gui_node/examples/kenning-multimodel-demo/*.yaml
